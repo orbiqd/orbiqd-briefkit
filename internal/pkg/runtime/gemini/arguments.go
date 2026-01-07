@@ -3,6 +3,8 @@ package gemini
 import (
 	"fmt"
 	"strings"
+
+	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 )
 
 type arguments struct {
@@ -43,6 +45,11 @@ func (a *arguments) valueToString(value any) (string, error) {
 			return "true", nil
 		}
 		return "false", nil
+	case agent.ConversationID:
+		if strings.TrimSpace(string(v)) == "" {
+			return "", fmt.Errorf("empty string")
+		}
+		return string(v), nil
 	case int:
 		return fmt.Sprintf("%d", v), nil
 	default:
