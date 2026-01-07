@@ -14,9 +14,15 @@ import (
 )
 
 var sampleAgentConfig = agent.Config{
-	RuntimeKind: agent.RuntimeKind("codex"),
-	RuntimeConfig: map[string]any{
-		"path": "/bin/agent",
+	Runtime: struct {
+		Kind    agent.RuntimeKind     `json:"kind"`
+		Config  agent.RuntimeConfig   `json:"config"`
+		Feature agent.RuntimeFeatures `json:"feature,omitempty"`
+	}{
+		Kind: agent.RuntimeKind("codex"),
+		Config: map[string]any{
+			"path": "/bin/agent",
+		},
 	},
 }
 

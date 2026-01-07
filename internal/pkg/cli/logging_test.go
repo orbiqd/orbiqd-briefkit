@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"testing"
 
+	"github.com/MatusOllah/slogcolor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -15,12 +16,20 @@ func TestCreateLoggerFromConfig_Success(t *testing.T) {
 		wantFormat string
 	}{
 		{
-			name: "text format",
+			name: "text-no-color format",
 			config: LogConfig{
 				Level:  "info",
-				Format: "text",
+				Format: "text-no-color",
 			},
-			wantFormat: "text",
+			wantFormat: "text-no-color",
+		},
+		{
+			name: "text-color format",
+			config: LogConfig{
+				Level:  "info",
+				Format: "text-color",
+			},
+			wantFormat: "text-color",
 		},
 		{
 			name: "json format",
@@ -34,18 +43,18 @@ func TestCreateLoggerFromConfig_Success(t *testing.T) {
 			name: "trims input",
 			config: LogConfig{
 				Level:  " INFO ",
-				Format: " Text ",
+				Format: " Text-No-Color ",
 			},
-			wantFormat: "text",
+			wantFormat: "text-no-color",
 		},
 		{
 			name: "quiet mode",
 			config: LogConfig{
 				Level:  "warn",
-				Format: "text",
+				Format: "text-no-color",
 				Quiet:  true,
 			},
-			wantFormat: "text",
+			wantFormat: "text-no-color",
 		},
 	}
 
@@ -56,8 +65,11 @@ func TestCreateLoggerFromConfig_Success(t *testing.T) {
 			require.NotNil(t, logger)
 
 			switch tt.wantFormat {
-			case "text":
+			case "text-no-color":
 				_, ok := logger.Handler().(*slog.TextHandler)
+				assert.True(t, ok)
+			case "text-color":
+				_, ok := logger.Handler().(*slogcolor.Handler)
 				assert.True(t, ok)
 			case "json":
 				_, ok := logger.Handler().(*slog.JSONHandler)
@@ -78,7 +90,7 @@ func TestCreateLoggerFromConfig_Errors(t *testing.T) {
 		{
 			name: "missing level",
 			config: LogConfig{
-				Format: "text",
+				Format: "text-no-color",
 			},
 			errorContains: "log level is required",
 		},
@@ -86,7 +98,7 @@ func TestCreateLoggerFromConfig_Errors(t *testing.T) {
 			name: "unknown level",
 			config: LogConfig{
 				Level:  "verbose",
-				Format: "text",
+				Format: "text-no-color",
 			},
 			errorContains: "unknown log level",
 		},

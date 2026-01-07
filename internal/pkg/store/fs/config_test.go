@@ -35,9 +35,15 @@ func TestConfigRepository_UpdateGet(t *testing.T) {
 
 	id := agent.AgentID("codex-1")
 	config := agent.Config{
-		RuntimeKind: agent.RuntimeKind("codex"),
-		RuntimeConfig: map[string]any{
-			"path": "/bin/codex",
+		Runtime: struct {
+			Kind    agent.RuntimeKind     `json:"kind"`
+			Config  agent.RuntimeConfig   `json:"config"`
+			Feature agent.RuntimeFeatures `json:"feature,omitempty"`
+		}{
+			Kind: agent.RuntimeKind("codex"),
+			Config: map[string]any{
+				"path": "/bin/codex",
+			},
 		},
 	}
 
@@ -51,8 +57,8 @@ func TestConfigRepository_UpdateGet(t *testing.T) {
 
 	loaded, err := repo.Get(ctx, id)
 	require.NoError(t, err)
-	assert.Equal(t, config.RuntimeKind, loaded.RuntimeKind)
-	assert.Equal(t, config.RuntimeConfig, loaded.RuntimeConfig)
+	assert.Equal(t, config.Runtime.Kind, loaded.Runtime.Kind)
+	assert.Equal(t, config.Runtime.Config, loaded.Runtime.Config)
 }
 
 func TestConfigRepository_Exists(t *testing.T) {
@@ -64,9 +70,15 @@ func TestConfigRepository_Exists(t *testing.T) {
 
 	id := agent.AgentID("codex")
 	config := agent.Config{
-		RuntimeKind: agent.RuntimeKind("codex"),
-		RuntimeConfig: map[string]any{
-			"path": "/bin/codex",
+		Runtime: struct {
+			Kind    agent.RuntimeKind     `json:"kind"`
+			Config  agent.RuntimeConfig   `json:"config"`
+			Feature agent.RuntimeFeatures `json:"feature,omitempty"`
+		}{
+			Kind: agent.RuntimeKind("codex"),
+			Config: map[string]any{
+				"path": "/bin/codex",
+			},
 		},
 	}
 
@@ -121,8 +133,24 @@ func TestConfigRepository_List(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, ids)
 
-	require.NoError(t, repo.Update(ctx, agent.AgentID("codex"), agent.Config{RuntimeKind: agent.RuntimeKind("codex")}))
-	require.NoError(t, repo.Update(ctx, agent.AgentID("claude-code"), agent.Config{RuntimeKind: agent.RuntimeKind("claude-code")}))
+	require.NoError(t, repo.Update(ctx, agent.AgentID("codex"), agent.Config{
+		Runtime: struct {
+			Kind    agent.RuntimeKind     `json:"kind"`
+			Config  agent.RuntimeConfig   `json:"config"`
+			Feature agent.RuntimeFeatures `json:"feature,omitempty"`
+		}{
+			Kind: agent.RuntimeKind("codex"),
+		},
+	}))
+	require.NoError(t, repo.Update(ctx, agent.AgentID("claude-code"), agent.Config{
+		Runtime: struct {
+			Kind    agent.RuntimeKind     `json:"kind"`
+			Config  agent.RuntimeConfig   `json:"config"`
+			Feature agent.RuntimeFeatures `json:"feature,omitempty"`
+		}{
+			Kind: agent.RuntimeKind("claude-code"),
+		},
+	}))
 	require.NoError(t, afero.WriteFile(memFs, filepath.Join(basePath, "readme.txt"), []byte("ignore"), 0644))
 	require.NoError(t, afero.WriteFile(memFs, filepath.Join(basePath, "Bad.yaml"), []byte("kind: codex"), 0644))
 
