@@ -8,7 +8,7 @@ import (
 
 	"github.com/iancoleman/strcase"
 	briefkitrunner "github.com/orbiqd/orbiqd-briefkit/internal/app/briefkit-runner"
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/types"
+	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	mcpserver "github.com/mark3labs/mcp-go/server"
@@ -40,7 +40,7 @@ func createExecTool(agentId agent.AgentID, agentConfig agent.Config, executionRe
 
 		executionInput := agent.ExecutionInput{
 			WorkingDirectory: nil,
-			Timeout:          types.Duration(time.Minute * 5),
+			Timeout:          utils.Duration(time.Minute * 5),
 			Prompt:           prompt,
 		}
 

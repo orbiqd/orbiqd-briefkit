@@ -12,6 +12,14 @@ type RuntimeKind string
 // RuntimeConfig is an opaque, runtime-specific configuration payload.
 type RuntimeConfig any
 
+type RuntimeFeatures struct {
+	// EnableWebSearch allow codex to use internal web-search tool, without allowing it to access internet.
+	EnableWebSearch *bool `json:"enableWebSearch"`
+
+	// EnableNetworkAccess
+	EnableNetworkAccess *bool `json:"enableNetworkAccess"`
+}
+
 // RuntimeEventKind describes the type of runtime event emitted by a runtime instance.
 type RuntimeEventKind string
 
@@ -95,13 +103,16 @@ type RuntimeRegistry interface {
 // Runtime describes a runtime implementation that can execute agent workloads.
 type Runtime interface {
 	// Execute starts a runtime instance for the given configuration and input.
-	Execute(ctx context.Context, id ExecutionID, config RuntimeConfig, input ExecutionInput) (RuntimeInstance, error)
+	Execute(ctx context.Context, id ExecutionID, input ExecutionInput, config Config) (RuntimeInstance, error)
 
 	// Discovery checks whether the runtime is available on the system.
 	Discovery(ctx context.Context) (bool, error)
 
 	// GetDefaultConfig returns the default configuration for the runtime.
 	GetDefaultConfig(ctx context.Context) (RuntimeConfig, error)
+
+	// GetDefaultFeatures returns list of default features supported by the runtime.
+	GetDefaultFeatures(ctx context.Context) (RuntimeFeatures, error)
 
 	// GetInfo returns metadata about the runtime implementation.
 	GetInfo(ctx context.Context) (RuntimeInfo, error)

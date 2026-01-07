@@ -6,7 +6,7 @@
 3. Ask clarifying questions when uncertain about user intent.
 
 ## Coding style
-1. Write self-documenting code. Add comments only when explicitly requested by the user.
+1. Write self-documenting code. Avoid commenting what code do. Add comments only when explicitly requested by the user.
 
 ## Working with coding agents
 1. Use positive language when writing or modifying agent instructions. Frame directives as actions to take rather than behaviors to avoid.

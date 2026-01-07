@@ -10,7 +10,7 @@ import (
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/types"
+	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
 )
 
 // StateExecutionCreateCmd creates a new execution.
@@ -48,7 +48,7 @@ func (e *StateExecutionCreateCmd) Run(ctx context.Context, repository agent.Exec
 
 	input := agent.ExecutionInput{
 		WorkingDirectory: &workingDir,
-		Timeout:          types.Duration(timeout),
+		Timeout:          utils.Duration(timeout),
 		Prompt:           e.Prompt,
 	}
 

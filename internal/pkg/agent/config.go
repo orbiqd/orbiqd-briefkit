@@ -6,8 +6,11 @@ import (
 )
 
 type Config struct {
-	RuntimeKind   RuntimeKind   `json:"runtimeKind"`
-	RuntimeConfig RuntimeConfig `json:"runtimeConfig"`
+	Runtime struct {
+		Kind    RuntimeKind     `json:"kind"`
+		Config  RuntimeConfig   `json:"config"`
+		Feature RuntimeFeatures `json:"feature,omitempty"`
+	} `json:"runtime"`
 }
 
 type ConfigRepository interface {

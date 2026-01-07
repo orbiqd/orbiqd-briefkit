@@ -9,7 +9,9 @@ import (
 	"strings"
 
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
+	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/cli"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/process"
+	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
 )
 
 var semverPattern = regexp.MustCompile(`\d+\.\d+\.\d+`)
@@ -23,9 +25,22 @@ func NewRuntime() *Runtime {
 	return &Runtime{}
 }
 
-func (runtime *Runtime) Execute(ctx context.Context, id agent.ExecutionID, config agent.RuntimeConfig, input agent.ExecutionInput) (agent.RuntimeInstance, error) {
-	//TODO implement me
-	panic("implement me")
+func (runtime *Runtime) Execute(ctx context.Context, executionId agent.ExecutionID, executionInput agent.ExecutionInput, agentConfig agent.Config) (agent.RuntimeInstance, error) {
+	logDir, err := cli.ResolveRuntimeLogDir()
+	if err != nil {
+		return nil, err
+	}
+
+	runtimeConfig, err := utils.AnyToStruct[Config](agentConfig.Runtime.Config)
+	if err != nil {
+		return nil, fmt.Errorf("convert runtime config: %w", err)
+	}
+
+	instance, err := newInstance(ctx, executionId, executionInput, *runtimeConfig, agentConfig.Runtime.Feature, logDir)
+	if err != nil {
+		return nil, err
+	}
+	return instance, nil
 }
 
 func (runtime *Runtime) Discovery(ctx context.Context) (bool, error) {
@@ -46,7 +61,14 @@ func (runtime *Runtime) Discovery(ctx context.Context) (bool, error) {
 }
 
 func (runtime *Runtime) GetDefaultConfig(ctx context.Context) (agent.RuntimeConfig, error) {
-	return nil, fmt.Errorf("not implemented")
+	return Config{}, nil
+}
+
+func (runtime *Runtime) GetDefaultFeatures(ctx context.Context) (agent.RuntimeFeatures, error) {
+	return agent.RuntimeFeatures{
+		EnableWebSearch:     nil,
+		EnableNetworkAccess: nil,
+	}, nil
 }
 
 func (runtime *Runtime) GetInfo(ctx context.Context) (agent.RuntimeInfo, error) {

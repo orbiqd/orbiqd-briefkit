@@ -12,7 +12,7 @@ import (
 
 // AgentListOutputItem represents a single agent entry in the list output.
 type AgentListOutputItem struct {
-	ID          agent.AgentID   `json:"id"`
+	ID          agent.AgentID     `json:"id"`
 	RuntimeKind agent.RuntimeKind `json:"runtimeKind"`
 }
 
@@ -46,7 +46,7 @@ func (a *AgentListCmd) Run(ctx context.Context, repository agent.ConfigRepositor
 
 		items = append(items, AgentListOutputItem{
 			ID:          id,
-			RuntimeKind: config.RuntimeKind,
+			RuntimeKind: config.Runtime.Kind,
 		})
 	}
 

@@ -8,7 +8,7 @@ import (
 
 	briefkitrunner "github.com/orbiqd/orbiqd-briefkit/internal/app/briefkit-runner"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/types"
+	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
 )
 
 // ExecCmd runs a prompt with specified model and options.
@@ -36,11 +36,11 @@ func (command *ExecCmd) Run(ctx context.Context, executionRepository agent.Execu
 		return fmt.Errorf("get agent config: %w", err)
 	}
 
-	slog.Debug("Found agent config.", slog.String("runtimeKind", string(agentConfig.RuntimeKind)))
+	slog.Debug("Found agent config.", slog.String("runtimeKind", string(agentConfig.Runtime.Kind)))
 
 	executionInput := agent.ExecutionInput{
 		WorkingDirectory: nil,
-		Timeout:          types.Duration(command.Timeout),
+		Timeout:          utils.Duration(command.Timeout),
 		Prompt:           command.Prompt,
 		Model:            command.Model,
 		ConversationID:   command.ConversationID,

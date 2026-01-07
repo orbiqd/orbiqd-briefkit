@@ -55,13 +55,13 @@ func (command *RunnerCommand) Run(ctx context.Context, executionRepository agent
 	if err != nil {
 		return fmt.Errorf("get agent config: %w", err)
 	}
-	slog.Debug("Got agent config.", slog.String("executionID", string(command.ExecutionID)), slog.String("runtimeKind", string(agentConfig.RuntimeKind)))
+	slog.Debug("Got agent config.", slog.String("executionID", string(command.ExecutionID)), slog.String("runtimeKind", string(agentConfig.Runtime.Kind)))
 
-	runtime, err := runtimeRegistry.Get(ctx, agentConfig.RuntimeKind)
+	runtime, err := runtimeRegistry.Get(ctx, agentConfig.Runtime.Kind)
 	if err != nil {
 		return fmt.Errorf("get runtime: %w", err)
 	}
-	slog.Debug("Got runtime.", slog.String("executionID", string(command.ExecutionID)), slog.String("runtimeKind", string(agentConfig.RuntimeKind)))
+	slog.Debug("Got runtime.", slog.String("executionID", string(command.ExecutionID)), slog.String("runtimeKind", string(agentConfig.Runtime.Kind)))
 
 	runCtx, cancel := context.WithTimeout(ctx, time.Duration(executionInput.Timeout))
 	defer cancel()
@@ -74,7 +74,7 @@ func (command *RunnerCommand) Run(ctx context.Context, executionRepository agent
 		return fmt.Errorf("update execution status: %w", err)
 	}
 
-	instance, err := runtime.Execute(runCtx, command.ExecutionID, agentConfig.RuntimeConfig, executionInput)
+	instance, err := runtime.Execute(runCtx, command.ExecutionID, executionInput, agentConfig)
 	if err != nil {
 		if updateErr := command.finishExecutionWithError(ctx, execution, executionStatus, err); updateErr != nil {
 			return updateErr

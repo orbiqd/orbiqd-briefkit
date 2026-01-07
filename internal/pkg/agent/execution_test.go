@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/types"
+	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -57,7 +57,7 @@ func TestExecutionInputValidate(t *testing.T) {
 	workingDir := t.TempDir()
 	valid := ExecutionInput{
 		Prompt:           "Hello",
-		Timeout:          types.Duration(5 * time.Second),
+		Timeout:          utils.Duration(5 * time.Second),
 		WorkingDirectory: &workingDir,
 	}
 

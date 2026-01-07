@@ -13,65 +13,69 @@ import (
 type Config struct {
 	// RequireWorkspaceRepository enforces that codex workdir must be a GIT repository.
 	RequireWorkspaceRepository bool `json:"requireWorkspaceRepository" default:"true"`
-
-	// EnableWebSearch allow codex to use internal web-search tool, without allowing it to access internet.
-	EnableWebSearch *bool `json:"enableWebSearch"`
-
-	// EnableNetworkAccess
-	EnableNetworkAccess *bool `json:"enableNetworkAccess"`
 }
 
-// Args renders Codex CLI flags based on the config values.
-func (config Config) Args() []string {
-	var args []string
+func applyRuntimeConfigArguments(runtimeArguments *arguments, config agent.RuntimeConfig) error {
+	var codexConfig Config
 
-	if !config.RequireWorkspaceRepository {
-		args = append(args, "--skip-git-repo-check")
-	}
+	switch typed := config.(type) {
+	case nil:
+		break
+	case Config:
+		codexConfig = typed
+	case *Config:
+		if typed != nil {
+			codexConfig = *typed
+		}
+	default:
+		payload, err := json.Marshal(config)
+		if err != nil {
+			return fmt.Errorf("marshal codex runtime config: %w", err)
+		}
 
-	if config.EnableNetworkAccess != nil {
-		if *config.EnableNetworkAccess {
-			args = append(args, "--config sandbox_workspace_write.network_access=true")
-		} else {
-			args = append(args, "--config sandbox_workspace_write.network_access=false")
+		if err := json.Unmarshal(payload, &codexConfig); err != nil {
+			return fmt.Errorf("unmarshal codex runtime config: %w", err)
 		}
 	}
 
-	if config.EnableWebSearch != nil {
-		if *config.EnableWebSearch {
-			args = append(args, "--config features.web_search_request=true")
-		} else {
-			args = append(args, "--config features.web_search_request=false")
+	defaults.SetDefaults(&codexConfig)
+
+	if !codexConfig.RequireWorkspaceRepository {
+		runtimeArguments.SetFlag("skip-git-repo-check")
+	}
+
+	return nil
+}
+
+func applyRuntimeFeaturesArguments(runtimeArguments *arguments, features agent.RuntimeFeatures) error {
+	var err error
+
+	if features.EnableNetworkAccess != nil {
+		err = runtimeArguments.SetConfigOverride("sandbox_workspace_write.network_access", *features.EnableNetworkAccess)
+		if err != nil {
+			return fmt.Errorf("enable network access: %w", err)
+		}
+	}
+
+	if features.EnableWebSearch != nil {
+		err = runtimeArguments.SetConfigOverride("features.web_search_request", *features.EnableWebSearch)
+		if err != nil {
+			return fmt.Errorf("enable web search: %w", err)
 		}
 	}
 
 	return nil
 }
 
-func createConfigFromRuntimeConfig(config agent.RuntimeConfig) (Config, error) {
-	var result Config
+func applyExecutionInputArguments(runtimeArguments *arguments, executionInput agent.ExecutionInput) error {
+	var err error
 
-	switch typed := config.(type) {
-	case nil:
-		break
-	case Config:
-		result = typed
-	case *Config:
-		if typed != nil {
-			result = *typed
-		}
-	default:
-		payload, err := json.Marshal(config)
+	if executionInput.Model != nil {
+		err = runtimeArguments.SetValue("model", *executionInput.Model)
 		if err != nil {
-			return Config{}, fmt.Errorf("marshal codex config: %w", err)
-		}
-
-		if err := json.Unmarshal(payload, &result); err != nil {
-			return Config{}, fmt.Errorf("unmarshal codex config: %w", err)
+			return fmt.Errorf("set model: %w", err)
 		}
 	}
 
-	defaults.SetDefaults(&result)
-
-	return result, nil
+	return nil
 }

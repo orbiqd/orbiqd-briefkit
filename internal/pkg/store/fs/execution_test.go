@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/types"
+	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -47,7 +47,7 @@ func TestRepository_Create(t *testing.T) {
 	// Prepare a valid input
 	input := agent.ExecutionInput{
 		Prompt:           "test prompt",
-		Timeout:          types.Duration(5 * time.Minute),
+		Timeout:          utils.Duration(5 * time.Minute),
 		WorkingDirectory: &workingDir,
 	}
 
@@ -114,7 +114,7 @@ func TestRepository_Exists(t *testing.T) {
 
 	input := agent.ExecutionInput{
 		Prompt:           "test prompt",
-		Timeout:          types.Duration(5 * time.Minute),
+		Timeout:          utils.Duration(5 * time.Minute),
 		WorkingDirectory: &workingDir,
 	}
 
@@ -158,7 +158,7 @@ func TestRepository_Get(t *testing.T) {
 
 	input := agent.ExecutionInput{
 		Prompt:           "test prompt",
-		Timeout:          types.Duration(5 * time.Minute), // Using the correct Duration type
+		Timeout:          utils.Duration(5 * time.Minute), // Using the correct Duration type
 		WorkingDirectory: &workingDir,
 	}
 
@@ -258,7 +258,7 @@ func TestExecution_GetSetResult(t *testing.T) {
 
 	input := agent.ExecutionInput{
 		Prompt:           "test prompt",
-		Timeout:          types.Duration(5 * time.Minute),
+		Timeout:          utils.Duration(5 * time.Minute),
 		WorkingDirectory: &workingDir,
 	}
 
@@ -321,7 +321,7 @@ func TestExecution_UpdateStatus(t *testing.T) {
 
 	input := agent.ExecutionInput{
 		Prompt:           "test prompt",
-		Timeout:          types.Duration(5 * time.Minute),
+		Timeout:          utils.Duration(5 * time.Minute),
 		WorkingDirectory: &workingDir,
 	}
 

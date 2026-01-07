@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/mitchellh/go-homedir"
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/types"
+	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
 )
 
 // ExecutionID identifies a single execution in the store.
@@ -42,7 +42,7 @@ type ExecutionInput struct {
 	WorkingDirectory *string `json:"workingDirectory"`
 
 	// Timeout defines the maximum allowed duration for the execution.
-	Timeout types.Duration `json:"timeout"`
+	Timeout utils.Duration `json:"timeout"`
 
 	// Prompt is the user input sent to the agent.
 	Prompt string `json:"prompt"`

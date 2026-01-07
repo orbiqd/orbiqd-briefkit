@@ -1,6 +1,7 @@
 package codex
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
@@ -10,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -41,7 +43,7 @@ type codexEvent struct {
 	} `json:"item"`
 }
 
-func newInstance(ctx context.Context, id agent.ExecutionID, logDir string, config Config, input agent.ExecutionInput) (*Instance, error) {
+func newInstance(ctx context.Context, executionId agent.ExecutionID, executionInput agent.ExecutionInput, runtimeConfig Config, runtimeFeatures agent.RuntimeFeatures, logDir string) (*Instance, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -51,21 +53,40 @@ func newInstance(ctx context.Context, id agent.ExecutionID, logDir string, confi
 		return nil, fmt.Errorf("lookup codex executable: %w", err)
 	}
 
-	args := []string{"exec"}
-	args = append(args, config.Args()...)
-	if input.Model != nil && strings.TrimSpace(*input.Model) != "" {
-		args = append(args, "--model", strings.TrimSpace(*input.Model))
-	}
-	args = append(args, "--json")
-	if input.ConversationID != nil {
-		args = append(args, "resume", string(*input.ConversationID), "-")
-	} else {
-		args = append(args, "-")
+	runtimeArguments := defaultArguments()
+
+	err = applyRuntimeConfigArguments(runtimeArguments, runtimeConfig)
+	if err != nil {
+		return nil, fmt.Errorf("apply runtime config: %w", err)
 	}
 
-	cmd := exec.CommandContext(ctx, path, args...)
-	if input.WorkingDirectory != nil && strings.TrimSpace(*input.WorkingDirectory) != "" {
-		cmd.Dir = *input.WorkingDirectory
+	err = applyRuntimeFeaturesArguments(runtimeArguments, runtimeFeatures)
+	if err != nil {
+		return nil, fmt.Errorf("apply runtime features: %w", err)
+	}
+
+	err = applyExecutionInputArguments(runtimeArguments, executionInput)
+	if err != nil {
+		return nil, fmt.Errorf("apply execution input: %w", err)
+	}
+
+	// Force JSON stream output for parsing
+	runtimeArguments.SetFlag("json")
+
+	instanceArgumentsList := slices.Concat(
+		[]string{"exec"},
+		runtimeArguments.ToList(),
+	)
+
+	if executionInput.ConversationID != nil {
+		instanceArgumentsList = append(instanceArgumentsList, "resume", string(*executionInput.ConversationID), "-")
+	} else {
+		instanceArgumentsList = append(instanceArgumentsList, "-")
+	}
+
+	cmd := exec.CommandContext(ctx, path, instanceArgumentsList...)
+	if executionInput.WorkingDirectory != nil && strings.TrimSpace(*executionInput.WorkingDirectory) != "" {
+		cmd.Dir = *executionInput.WorkingDirectory
 	} else {
 		workingDir, err := os.Getwd()
 		if err != nil {
@@ -81,7 +102,7 @@ func newInstance(ctx context.Context, id agent.ExecutionID, logDir string, confi
 	}
 
 	// Setup logging
-	sessionLogDir := filepath.Join(logDir, "codex", string(id), time.Now().Format("2006-01-02_15-04-05"))
+	sessionLogDir := filepath.Join(logDir, "codex", string(executionId), time.Now().Format("2006-01-02_15-04-05"))
 	if err := os.MkdirAll(sessionLogDir, 0755); err != nil {
 		return nil, fmt.Errorf("create session log directory: %w", err)
 	}
@@ -104,7 +125,7 @@ func newInstance(ctx context.Context, id agent.ExecutionID, logDir string, confi
 	}
 	instance.closers = append(instance.closers, stderrLog)
 
-	cmd.Stdin = io.TeeReader(strings.NewReader(input.Prompt), stdinLog)
+	cmd.Stdin = io.TeeReader(strings.NewReader(executionInput.Prompt), stdinLog)
 
 	pipe, err := cmd.StdoutPipe()
 	if err != nil {
@@ -170,15 +191,25 @@ func (instance *Instance) Wait(ctx context.Context) (agent.RuntimeResult, error)
 }
 
 func (instance *Instance) watchCodexEvents(stdoutLog io.Writer) error {
-	// Wrap stdout pipe with TeeReader to log output while decoding
-	decoder := json.NewDecoder(io.TeeReader(instance.stdout, stdoutLog))
-	for {
+	scanner := bufio.NewScanner(io.TeeReader(instance.stdout, stdoutLog))
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		line = strings.TrimSpace(line)
+
+		if line == "" {
+			continue
+		}
+
+		if !strings.HasPrefix(line, "{") {
+			slog.Debug("Skipping non-JSON line from Codex CLI", slog.String("line", line))
+			continue
+		}
+
 		var event codexEvent
-		if err := decoder.Decode(&event); err != nil {
-			if errors.Is(err, io.EOF) {
-				return nil
-			}
-			return fmt.Errorf("decode codex event: %w", err)
+		if err := json.Unmarshal([]byte(line), &event); err != nil {
+			slog.Warn("Failed to unmarshal JSON candidate from Codex CLI", slog.String("line", line), slog.Any("error", err))
+			continue
 		}
 
 		slog.Debug("Codex event received.", slog.String("eventType", event.Type))
@@ -194,6 +225,12 @@ func (instance *Instance) watchCodexEvents(stdoutLog io.Writer) error {
 			}
 		}
 	}
+
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("read codex output: %w", err)
+	}
+
+	return nil
 }
 
 func (instance *Instance) runtimeError(err error) error {
