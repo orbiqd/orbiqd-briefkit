@@ -7,7 +7,10 @@
 
 OrbiqD BriefKit is a local orchestration tool that exposes an **MCP server** to drive **subscription-based coding CLIs** (Codex / Claude Code / Gemini) — **no APIs, no API keys required**.
 
+**Unlike traditional MCP tools**, BriefKit runs agents in your **current working directory**, giving them immediate access to read, modify, and understand your project files—no file uploads or context copying needed.
+
 Built for workflows where you want to:
+- **Give agents instant access to your local project** (they run in your workspace)
 - Run multiple coding agents from a unified interface
 - Maintain clean, explicit execution logs you can inspect and analyze
 - Integrate agents into your own tools via the MCP protocol
@@ -15,6 +18,7 @@ Built for workflows where you want to:
 
 ## Key Features
 
+- **Shared Workspace Context** - Agents run in your working directory with automatic access to read/modify local files, use git commands, and understand your project structure—no extra configuration needed
 - **Multiple Agent Support** - Work with Claude Code, Codex, and Gemini from one interface
 - **MCP Server** - Integrate agents into Claude Desktop or any MCP-compatible client
 - **CLI Tool** - Direct command-line access for scripting and automation
@@ -369,6 +373,31 @@ Add the following to your Claude Desktop MCP configuration:
 
 Completely quit and restart Claude Desktop for the configuration to take effect.
 
+### Workspace Context Sharing
+
+**Critical Feature:** BriefKit launches agents in the **caller's current working directory**. This is what makes BriefKit unique.
+
+When you use BriefKit tools from Claude Desktop (or any MCP client):
+- **Agents see your project files automatically** - They can read, edit, and understand your codebase without file uploads
+- **Full git integration** - Agents can run `git diff`, `git log`, `git commit` as if you ran them
+- **Contextual understanding** - Say "fix the bug in main.go" and the agent already knows where `main.go` is
+- **Seamless refactoring** - Ask "refactor the auth module" and the agent modifies your actual project files
+- **No manual context transfer** - Unlike other MCP tools, agents just work where you work
+
+**Example workflow:**
+```
+You (in Claude Desktop): Use exec_codex to analyze the authentication module
+→ Codex runs in /your/project/directory
+→ Reads auth/*.go files directly
+→ Provides analysis with full project context
+
+You: Now refactor it to use dependency injection
+→ Codex modifies files in place
+→ You can immediately test changes with your local tools
+```
+
+This workspace-native execution is **unique to BriefKit**—most MCP servers run agents in isolated contexts requiring manual file sharing.
+
 ### Available MCP Tools
 
 For each configured agent, BriefKit exposes a tool following the naming pattern `exec_<agent_id>` (in snake_case).
@@ -414,10 +443,11 @@ This requires Node.js and will open an interactive debugging interface for testi
 
 ### CLI Automation
 
-Script multi-agent workflows for automation:
+Script multi-agent workflows with full workspace access:
 
 ```bash
 #!/bin/bash
+# Run from your project directory - agents will have full context
 
 # Get Claude's architectural analysis
 claude_result=$(briefkit-ctl exec --agent-id claude-code "Analyze the system architecture")
@@ -435,14 +465,22 @@ echo "$codex_result" >> report.md
 echo "$gemini_result" >> report.md
 ```
 
-### MCP Integration
+All agents run in your current directory and can read/analyze your actual project files.
 
-Seamlessly use multiple agents within Claude Desktop conversations:
+### MCP Integration with Workspace Context
 
-1. Ask Claude Desktop a question
-2. Have it consult Codex for code-specific analysis via `exec_codex`
-3. Continue the conversation with context from both agents
-4. No need to switch between different tools or terminals
+Seamlessly use multiple agents within Claude Desktop conversations with full project access:
+
+1. Open Claude Desktop **in your project directory**
+2. Ask: "Use exec_codex to analyze the authentication module"
+   - Codex runs in your workspace, reads `auth/*.go` files directly
+3. Ask: "Now use exec_codex to refactor it for dependency injection"
+   - Codex modifies your actual project files in place
+4. Ask: "Use exec_claude_code to add comprehensive tests"
+   - Claude Code sees the refactored code and creates tests in your project
+5. Continue the conversation with context from both agents—**no file uploads, no copying code**
+
+The agents work directly in your project, just like local development.
 
 ### Execution Tracking
 
