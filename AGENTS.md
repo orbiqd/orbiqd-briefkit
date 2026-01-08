@@ -1,5 +1,9 @@
 # Codex Instructions
 
+## IMPORTANT DIRECTIVES
+1. When working with GIT, must always follow instructions from .ai/GIT_INSTRUCTIONS.md
+2. When coding, must always follow instructions from .ai/CODING_INSTRUCTIONS.md
+
 ## Language and interactions
 1. Write all comments, code, and names in English.
 2. Communicate with the user in the language they use to initiate the conversation.

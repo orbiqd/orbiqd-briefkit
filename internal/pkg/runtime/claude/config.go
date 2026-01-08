@@ -111,7 +111,7 @@ func writeClaudeConfig(config *ClaudeConfig) error {
 		return fmt.Errorf("locate config path: %w", err)
 	}
 
-	data, err := json.Marshal(config)
+	data, err := json.MarshalIndent(config, "", "  ")
 	if err != nil {
 		return fmt.Errorf("marshal config: %w", err)
 	}
