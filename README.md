@@ -2,6 +2,7 @@
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Go Version](https://img.shields.io/badge/Go-1.22+-00ADD8?logo=go)](go.mod)
+![Coverage](https://img.shields.io/codecov/c/github/orbiqd/orbiqd-briefkit)
 
 ## Overview
 
