@@ -10,13 +10,15 @@ import (
 
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/cli"
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/process"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
 )
 
 var semverPattern = regexp.MustCompile(`\d+\.\d+\.\d+`)
 
 const Claude = agent.RuntimeKind("claude")
+
+type RuntimeConfig struct {
+}
 
 type Runtime struct {
 }
@@ -31,7 +33,7 @@ func (runtime *Runtime) Execute(ctx context.Context, executionId agent.Execution
 		return nil, err
 	}
 
-	runtimeConfig, err := utils.AnyToStruct[Config](agentConfig.Runtime.Config)
+	runtimeConfig, err := utils.AnyToStruct[RuntimeConfig](agentConfig.Runtime.Config)
 	if err != nil {
 		return nil, fmt.Errorf("convert runtime config: %w", err)
 	}
@@ -48,7 +50,7 @@ func (runtime *Runtime) Discovery(ctx context.Context) (bool, error) {
 		return false, err
 	}
 
-	_, err := process.LookupExecutable(ctx, []string{"claude", "claude-code"})
+	_, err := locateExecutable(ctx)
 	if err == nil {
 		return true, nil
 	}
@@ -61,7 +63,7 @@ func (runtime *Runtime) Discovery(ctx context.Context) (bool, error) {
 }
 
 func (runtime *Runtime) GetDefaultConfig(ctx context.Context) (agent.RuntimeConfig, error) {
-	return Config{}, nil
+	return RuntimeConfig{}, nil
 }
 
 func (runtime *Runtime) GetDefaultFeatures(ctx context.Context) (agent.RuntimeFeatures, error) {
@@ -76,9 +78,9 @@ func (runtime *Runtime) GetInfo(ctx context.Context) (agent.RuntimeInfo, error) 
 		return agent.RuntimeInfo{}, err
 	}
 
-	path, err := process.LookupExecutable(ctx, []string{"claude", "claude-code"})
+	path, err := locateExecutable(ctx)
 	if err != nil {
-		return agent.RuntimeInfo{}, fmt.Errorf("lookup claude executable: %w", err)
+		return agent.RuntimeInfo{}, err
 	}
 
 	output, err := exec.CommandContext(ctx, path, "--version").CombinedOutput()
@@ -92,4 +94,74 @@ func (runtime *Runtime) GetInfo(ctx context.Context) (agent.RuntimeInfo, error) 
 	}
 
 	return agent.RuntimeInfo{Version: version}, nil
+}
+
+func (runtime *Runtime) AddMCPServer(ctx context.Context, mcpServerName agent.RuntimeMCPServerName, mcpServer agent.RuntimeMCPServer) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	config, err := readClaudeConfig()
+	if err != nil {
+		return fmt.Errorf("add mcp server: %w", err)
+	}
+
+	claudeServer, err := toClaudeMCPServerConfig(mcpServer)
+	if err != nil {
+		return fmt.Errorf("add mcp server: %w", err)
+	}
+
+	config.MCPServers[string(mcpServerName)] = claudeServer
+
+	if err := writeClaudeConfig(config); err != nil {
+		return fmt.Errorf("add mcp server: %w", err)
+	}
+
+	return nil
+}
+
+func (runtime *Runtime) ListMCPServers(ctx context.Context) (map[agent.RuntimeMCPServerName]agent.RuntimeMCPServer, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	config, err := readClaudeConfig()
+	if err != nil {
+		return nil, fmt.Errorf("list mcp servers: %w", err)
+	}
+
+	result := make(map[agent.RuntimeMCPServerName]agent.RuntimeMCPServer)
+
+	for name, claudeServer := range config.MCPServers {
+		runtimeServer, err := toRuntimeMCPServer(claudeServer)
+		if err != nil {
+			return nil, fmt.Errorf("list mcp servers: convert server %s: %w", name, err)
+		}
+		result[agent.RuntimeMCPServerName(name)] = runtimeServer
+	}
+
+	return result, nil
+}
+
+func (runtime *Runtime) RemoveMCPServer(ctx context.Context, mcpServerName agent.RuntimeMCPServerName) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	config, err := readClaudeConfig()
+	if err != nil {
+		return fmt.Errorf("remove mcp server: %w", err)
+	}
+
+	if _, exists := config.MCPServers[string(mcpServerName)]; !exists {
+		return fmt.Errorf("remove mcp server: %w", ErrMCPServerNotFound)
+	}
+
+	delete(config.MCPServers, string(mcpServerName))
+
+	if err := writeClaudeConfig(config); err != nil {
+		return fmt.Errorf("remove mcp server: %w", err)
+	}
+
+	return nil
 }

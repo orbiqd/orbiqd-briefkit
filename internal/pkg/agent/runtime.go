@@ -18,6 +18,10 @@ type RuntimeFeatures struct {
 
 	// EnableNetworkAccess
 	EnableNetworkAccess *bool `json:"enableNetworkAccess"`
+
+	// TODO: fix comment
+	// EnableSandbox forces agent to use sandbox, even if it has disabled it in the user configuration
+	EnableSandbox *bool `json:"enableSandbox"`
 }
 
 // RuntimeEventKind describes the type of runtime event emitted by a runtime instance.
@@ -116,6 +120,23 @@ type Runtime interface {
 
 	// GetInfo returns metadata about the runtime implementation.
 	GetInfo(ctx context.Context) (RuntimeInfo, error)
+
+	AddMCPServer(ctx context.Context, mcpServerName RuntimeMCPServerName, mcpServer RuntimeMCPServer) error
+
+	ListMCPServers(ctx context.Context) (map[RuntimeMCPServerName]RuntimeMCPServer, error)
+
+	RemoveMCPServer(ctx context.Context, mcpServerName RuntimeMCPServerName) error
+}
+
+type RuntimeMCPServerName string
+
+type RuntimeSTDIOMCPServer struct {
+	Command   string
+	Arguments []string
+}
+
+type RuntimeMCPServer struct {
+	STDIO *RuntimeSTDIOMCPServer
 }
 
 // RuntimeInfo describes runtime metadata.

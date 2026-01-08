@@ -5,80 +5,112 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/mcuadros/go-defaults"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
+	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
 )
 
-type arguments struct {
-	flags            map[string]bool
-	values           map[string]string
-	settingsOverride map[string]any
+type ClaudeArguments struct {
+	Print           *bool
+	Verbose         *bool
+	OutputFormat    *string
+	Model           *string
+	ResumeSessionID *string
+	DisallowedTools []string
+	Settings        map[string]any
 }
 
-func defaultArguments() *arguments {
-	return &arguments{
-		flags:            map[string]bool{},
-		values:           map[string]string{},
-		settingsOverride: map[string]any{},
+func NewClaudeArguments() *ClaudeArguments {
+	return &ClaudeArguments{
+		Print:        utils.ToPointer(true),
+		Verbose:      utils.ToPointer(true),
+		OutputFormat: utils.ToPointer("stream-json"),
+		Settings:     make(map[string]any),
 	}
 }
 
-func (a *arguments) SetFlag(name string) {
-	a.flags[name] = true
-}
-
-func (a *arguments) SetValue(name string, value any) error {
-	valueStr, err := a.valueToString(value)
-	if err != nil {
-		return err
-	}
-
-	a.values[name] = valueStr
-	return nil
-}
-
-func (a *arguments) SetSettingsOverride(key string, value any) error {
-	a.settingsOverride[key] = value
-	return nil
-}
-
-func (a *arguments) valueToString(value any) (string, error) {
-	switch v := value.(type) {
-	case string:
-		if strings.TrimSpace(v) == "" {
-			return "", fmt.Errorf("empty string")
-		}
-		return v, nil
-	case bool:
-		if v {
-			return "true", nil
-		}
-		return "false", nil
-	case int:
-		return fmt.Sprintf("%d", v), nil
-	case agent.ConversationID:
-		return string(v), nil
-	default:
-		return "", fmt.Errorf("unsupported type %T", value)
-	}
-}
-
-func (a *arguments) ToList() []string {
+func (arguments *ClaudeArguments) ToSlice() []string {
 	var list []string
 
-	for flag := range a.flags {
-		list = append(list, fmt.Sprintf("--%s", flag))
+	if arguments.Print != nil && *arguments.Print {
+		list = append(list, "--print")
 	}
 
-	for key, value := range a.values {
-		list = append(list, fmt.Sprintf("--%s=%s", key, value))
+	if arguments.Verbose != nil && *arguments.Verbose {
+		list = append(list, "--verbose")
 	}
 
-	if len(a.settingsOverride) > 0 {
-		settingsJSON, err := json.Marshal(a.settingsOverride)
+	if arguments.OutputFormat != nil {
+		list = append(list, fmt.Sprintf("--output-format=%s", *arguments.OutputFormat))
+	}
+
+	if arguments.Model != nil {
+		list = append(list, fmt.Sprintf("--model=%s", *arguments.Model))
+	}
+
+	if arguments.ResumeSessionID != nil {
+		list = append(list, fmt.Sprintf("--resume=%s", *arguments.ResumeSessionID))
+	}
+
+	if len(arguments.DisallowedTools) > 0 {
+		list = append(list, fmt.Sprintf("--disallowed-tools=%s", strings.Join(arguments.DisallowedTools, ",")))
+	}
+
+	if len(arguments.Settings) > 0 {
+		settingsJSON, err := json.Marshal(arguments.Settings)
 		if err == nil {
 			list = append(list, fmt.Sprintf("--settings=%s", string(settingsJSON)))
 		}
 	}
 
 	return list
+}
+
+func (arguments *ClaudeArguments) ApplyRuntimeConfig(config agent.RuntimeConfig) error {
+	var claudeConfig RuntimeConfig
+
+	switch typed := config.(type) {
+	case nil:
+		break
+	case RuntimeConfig:
+		claudeConfig = typed
+	case *RuntimeConfig:
+		if typed != nil {
+			claudeConfig = *typed
+		}
+	default:
+		payload, err := json.Marshal(config)
+		if err != nil {
+			return fmt.Errorf("marshal claude runtime config: %w", err)
+		}
+
+		if err := json.Unmarshal(payload, &claudeConfig); err != nil {
+			return fmt.Errorf("unmarshal claude runtime config: %w", err)
+		}
+	}
+
+	defaults.SetDefaults(&claudeConfig)
+
+	return nil
+}
+
+func (arguments *ClaudeArguments) ApplyRuntimeFeatures(features agent.RuntimeFeatures) error {
+	if features.EnableWebSearch != nil && !*features.EnableWebSearch {
+		arguments.DisallowedTools = append(arguments.DisallowedTools, "WebSearch")
+	}
+
+	return nil
+}
+
+func (arguments *ClaudeArguments) ApplyExecutionInput(executionInput agent.ExecutionInput) error {
+	if executionInput.Model != nil {
+		arguments.Model = executionInput.Model
+	}
+
+	if executionInput.ConversationID != nil {
+		sessionID := string(*executionInput.ConversationID)
+		arguments.ResumeSessionID = &sessionID
+	}
+
+	return nil
 }
