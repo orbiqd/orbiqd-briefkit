@@ -11,18 +11,15 @@ import (
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/cli"
 )
 
-// TODO: Refine log texts to be more clear and well polished
-// TODO: Refine help texts to be more descriptive and clear for users
-
 type SetupCmd struct {
-	RuntimeKind []agent.RuntimeKind `help:"limit setup to the this runtime kidds, when empty all kinds will be used"`
+	RuntimeKind []agent.RuntimeKind `help:"Limit setup to these runtime kinds. When empty, all kinds will be configured."`
 
-	SetupAgentConfig bool `default:"true" help:""`
-	SetupAgentMCP    bool `default:"true" help:""`
+	SetupAgentConfig bool `default:"true" help:"Configure agent runtime settings (default: true)"`
+	SetupAgentMCP    bool `default:"true" help:"Configure agent MCP server integration (default: true)"`
 
-	EnableSandbox *bool `help:"if setted, ovverride default agent config and enable sandbox for all tasks"`
+	EnableSandbox *bool `help:"If set, override default agent configuration and enable/disable sandbox for all tasks"`
 
-	Force bool `default:"false" help:"allow to override existing mcp or agent config"`
+	Force bool `default:"false" help:"Allow overriding existing MCP server or agent configuration"`
 }
 
 func (command *SetupCmd) Run(ctx context.Context, runtimeRegistry agent.RuntimeRegistry, configRepository agent.ConfigRepository) error {
@@ -58,7 +55,7 @@ func (command *SetupCmd) detectRuntimes(ctx context.Context, runtimeRegistry age
 	for _, runtimeKind := range supportedRuntimes {
 		logger := slog.With(slog.String("runtimeKind", string(runtimeKind)))
 
-		logger.Debug("Discovering runtime.")
+		logger.Debug("Discovering runtime on system.")
 
 		runtime, err := runtimeRegistry.Get(ctx, runtimeKind)
 		if err != nil {
@@ -71,7 +68,7 @@ func (command *SetupCmd) detectRuntimes(ctx context.Context, runtimeRegistry age
 		}
 
 		if !runtimeFound {
-			slog.Warn("Runtime not found.")
+			logger.Warn("Runtime not found on system.")
 			continue
 		}
 
@@ -97,7 +94,7 @@ func (command *SetupCmd) setupRuntime(ctx context.Context, runtimeKind agent.Run
 			return fmt.Errorf("agent config: %w", err)
 		}
 	} else {
-		logger.Warn("Skippign setup agent configuratoin.")
+		logger.Warn("Skipping agent configuration setup.")
 	}
 
 	if command.SetupAgentMCP {
@@ -106,7 +103,7 @@ func (command *SetupCmd) setupRuntime(ctx context.Context, runtimeKind agent.Run
 			return fmt.Errorf("agent mcp: %w", err)
 		}
 	} else {
-		logger.Warn("Skipping setup agent MCP.")
+		logger.Warn("Skipping agent MCP server setup.")
 	}
 
 	return nil
@@ -117,7 +114,7 @@ func (command *SetupCmd) setupRuntimeAgentConfig(ctx context.Context, runtimeKin
 
 	logger := slog.With(slog.String("runtimeKind", string(runtimeKind)), slog.String("agentId", string(agentId)))
 
-	logger.Debug("Setting up agent config.")
+	logger.Debug("Configuring agent runtime settings.")
 
 	runtimeConfig, err := runtime.GetDefaultConfig(ctx)
 	if err != nil {
@@ -131,9 +128,9 @@ func (command *SetupCmd) setupRuntimeAgentConfig(ctx context.Context, runtimeKin
 
 	if command.EnableSandbox != nil {
 		if *command.EnableSandbox {
-			logger.Info("Enablging sandbox for runtime.")
+			logger.Info("Enabling sandbox for runtime.")
 		} else {
-			logger.Warn("Overriding disabling sandbox for runtime.")
+			logger.Warn("Disabling sandbox for runtime.")
 		}
 
 		runtimeFeatures.EnableSandbox = command.EnableSandbox
@@ -145,6 +142,9 @@ func (command *SetupCmd) setupRuntimeAgentConfig(ctx context.Context, runtimeKin
 	config.Runtime.Feature = runtimeFeatures
 
 	hasConfig, err := configRepository.Exists(ctx, agentId)
+	if err != nil {
+		return fmt.Errorf("agent config exists: %w", err)
+	}
 	if hasConfig && !command.Force {
 		return fmt.Errorf("agent config %s already exists", agentId)
 	}
@@ -154,7 +154,7 @@ func (command *SetupCmd) setupRuntimeAgentConfig(ctx context.Context, runtimeKin
 		return fmt.Errorf("update agent config: %w", err)
 	}
 
-	logger.Info("Agent config updated.")
+	logger.Info("Agent configuration saved successfully.")
 
 	return nil
 }
@@ -167,7 +167,7 @@ func (command *SetupCmd) setupRuntimeAgentMCP(ctx context.Context, runtimeKind a
 		slog.String("mcpServerName", string(mcpServerName)),
 	)
 
-	logger.Debug("Setting up agent MCP.")
+	logger.Debug("Configuring agent MCP server.")
 
 	mcpServers, err := runtime.ListMCPServers(ctx)
 	if err != nil {
