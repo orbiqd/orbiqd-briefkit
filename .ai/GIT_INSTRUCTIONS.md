@@ -11,6 +11,7 @@ GitHub repository related to this project is: https://github.com/orbiqd/orbiqd-b
 4. Use English as primary language.
 5. Write only the subject line without body or additional paragraphs
 6. Describe WHY the change was made, not WHAT was changed (the diff shows what)
+7. Use `chore(ai):` for changes to AI agent instructions, configuration, or documentation (e.g., AGENTS.md, CLAUDE.md, GEMINI.md, .ai/ directory)
 
 ## Pre-Commit Checks
 1. Run `git status` before committing to review all changes

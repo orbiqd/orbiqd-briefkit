@@ -19,4 +19,3 @@
 
 ## Project specification
 1. Consult /README.md for a general overview of the project and its conventions.
-2. Apply the rules in /DEVELOPMENT.md during implementation.
