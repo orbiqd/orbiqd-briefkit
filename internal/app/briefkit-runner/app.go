@@ -45,7 +45,7 @@ func (command *RunnerCommand) Run(ctx context.Context, executionRepository agent
 		}
 
 		if executionStatus.State != agent.ExecutionFailed && executionStatus.State != agent.ExecutionSucceeded {
-			return fmt.Errorf("execution state must be created, failed, or succeeded to retry")
+			return errors.New("execution state must be created, failed, or succeeded to retry")
 		}
 
 		slog.Info("Retrying execution.", slog.String("executionID", string(command.ExecutionID)), slog.String("executionState", string(executionStatus.State)))

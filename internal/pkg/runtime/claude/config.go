@@ -2,69 +2,68 @@ package claude
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"os"
 
-	"github.com/mcuadros/go-defaults"
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
+	"github.com/spf13/afero"
 )
 
-type Config struct {
-}
+var ErrMCPServerNotFound = errors.New("mcp server not found")
 
-func applyRuntimeConfigArguments(args *arguments, config agent.RuntimeConfig) error {
-	var claudeConfig Config
-
-	switch typed := config.(type) {
-	case nil:
-		break
-	case Config:
-		claudeConfig = typed
-	case *Config:
-		if typed != nil {
-			claudeConfig = *typed
-		}
-	default:
-		payload, err := json.Marshal(config)
-		if err != nil {
-			return fmt.Errorf("marshal claude runtime config: %w", err)
-		}
-
-		if err := json.Unmarshal(payload, &claudeConfig); err != nil {
-			return fmt.Errorf("unmarshal claude runtime config: %w", err)
-		}
+// readClaudeConfig reads raw ~/.claude.json bytes
+// Returns empty JSON object (without error) if file doesn't exist
+func readClaudeConfig(fs afero.Fs) ([]byte, error) {
+	configPath, err := locateConfigPath()
+	if err != nil {
+		return nil, fmt.Errorf("locate config path: %w", err)
 	}
 
-	defaults.SetDefaults(&claudeConfig)
-
-	return nil
-}
-
-func applyRuntimeFeaturesArguments(args *arguments, features agent.RuntimeFeatures) error {
-	if features.EnableWebSearch != nil && !*features.EnableWebSearch {
-		err := args.SetValue("disallowed-tools", "WebSearch")
-		if err != nil {
-			return fmt.Errorf("disable web search: %w", err)
+	data, err := afero.ReadFile(fs, configPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return []byte("{}"), nil
 		}
+		return nil, fmt.Errorf("read config file: %w", err)
 	}
 
-	return nil
-}
-
-func applyExecutionInputArguments(args *arguments, executionInput agent.ExecutionInput) error {
-	var err error
-
-	if executionInput.Model != nil {
-		err = args.SetValue("model", *executionInput.Model)
-		if err != nil {
-			return fmt.Errorf("set model: %w", err)
-		}
+	if len(data) == 0 {
+		return []byte("{}"), nil
 	}
 
-	if executionInput.ConversationID != nil {
-		err = args.SetValue("resume", *executionInput.ConversationID)
-		if err != nil {
-			return fmt.Errorf("set resume: %w", err)
-		}
+	// Validate JSON syntax
+	if !json.Valid(data) {
+		return nil, errors.New("unmarshal config: invalid JSON syntax")
+	}
+
+	return data, nil
+}
+
+// writeClaudeConfig writes raw JSON bytes to ~/.claude.json atomically
+// Uses pattern: write to temp file → rename (atomic operation)
+func writeClaudeConfig(fs afero.Fs, data []byte) error {
+	configPath, err := locateConfigPath()
+	if err != nil {
+		return fmt.Errorf("locate config path: %w", err)
+	}
+
+	tmpPath := configPath + "~"
+
+	exists, err := afero.Exists(fs, tmpPath)
+	if err != nil {
+		return fmt.Errorf("check temp file existence: %w", err)
+	}
+	if exists {
+		return fmt.Errorf("temp file %s already exists: %w", tmpPath, os.ErrExist)
+	}
+
+	if err := afero.WriteFile(fs, tmpPath, data, 0644); err != nil {
+		return fmt.Errorf("write temp file: %w", err)
+	}
+
+	if err := fs.Rename(tmpPath, configPath); err != nil {
+		_ = fs.Remove(tmpPath)
+		return fmt.Errorf("rename temp file: %w", err)
 	}
 
 	return nil

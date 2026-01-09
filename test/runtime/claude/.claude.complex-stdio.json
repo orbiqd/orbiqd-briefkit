@@ -1,0 +1,29 @@
+{
+  "mcpServers": {
+    "complex-server": {
+      "type": "stdio",
+      "command": "/usr/local/bin/custom-mcp-server",
+      "args": [
+        "--config",
+        "/etc/mcp/config.yaml",
+        "--log-level",
+        "debug",
+        "--port",
+        "8080",
+        "--feature-flag",
+        "experimental",
+        "--data-dir",
+        "/var/lib/mcp/data"
+      ],
+      "env": {
+        "NODE_ENV": "production",
+        "DEBUG": "*",
+        "LOG_LEVEL": "info",
+        "API_KEY": "sk-1234567890abcdef",
+        "DATABASE_URL": "postgresql://user:pass@localhost:5432/db",
+        "REDIS_URL": "redis://localhost:6379",
+        "PATH": "/usr/local/bin:/usr/bin:/bin"
+      }
+    }
+  }
+}

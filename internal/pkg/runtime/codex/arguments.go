@@ -1,6 +1,7 @@
 package codex
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -51,7 +52,7 @@ func (arguments *arguments) valueToString(value any) (string, error) {
 	switch value := (value).(type) {
 	case string:
 		if strings.TrimSpace(value) == "" {
-			return "", fmt.Errorf("empty string")
+			return "", errors.New("empty string")
 		}
 
 		return value, nil
@@ -71,7 +72,7 @@ func (arguments *arguments) ToList() []string {
 	var list []string
 
 	for flag := range arguments.flags {
-		list = append(list, fmt.Sprintf("--%s", flag))
+		list = append(list, "--"+flag)
 	}
 
 	for key, value := range arguments.values {

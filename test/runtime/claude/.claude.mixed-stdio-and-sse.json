@@ -1,0 +1,28 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/user/code"
+      ]
+    },
+    "remote-api": {
+      "type": "sse",
+      "url": "https://api.example.com/mcp",
+      "headers": {
+        "Authorization": "Bearer token123"
+      }
+    },
+    "local-python": {
+      "type": "stdio",
+      "command": "python",
+      "args": [
+        "-m",
+        "my_mcp_server"
+      ]
+    }
+  }
+}

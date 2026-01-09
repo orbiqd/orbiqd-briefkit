@@ -1,0 +1,30 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/user/projects"
+      ]
+    }
+  },
+  "theme": "dark",
+  "font_size": 14,
+  "editor": {
+    "tabSize": 2,
+    "wordWrap": true
+  },
+  "telemetry": {
+    "enabled": false,
+    "crashReports": true
+  },
+  "customSettings": {
+    "autoSave": true,
+    "linting": {
+      "enabled": true,
+      "rules": ["no-console", "prefer-const"]
+    }
+  }
+}

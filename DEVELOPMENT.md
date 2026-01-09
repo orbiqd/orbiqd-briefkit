@@ -91,14 +91,6 @@ Please adhere to the following rules when contributing.
 
 -   **Code Formatting**: All Go code must be formatted with `gofmt`.
 -   **Dependency Management**: After adding or removing Go dependencies, always run `go mod tidy`.
--   **Configuration Files**: Use the `.yaml` extension for all YAML files, not `.yml`.
--   **Logging**: When using `slog`, wrap attributes with helpers like `slog.String` and `slog.Int` to keep types explicit. Write log messages as full sentences starting with a capital letter.
 -   **Builds**: After making changes, rebuild the binaries to ensure local runs use the latest code.
--   **Error Variables**: Place package-level error variables at the end of the file.
--   **Commit Messages**: Follow conventional commit standards to maintain a clear and descriptive version history.
--   **Public Signatures**: All public functions, methods, and types in Go code must have clear and concise comments explaining their purpose, arguments, and return values.
--   **Interface Formatting**: When interface methods include doc comments, separate each method block with a blank line for readability.
--   **Struct Field Formatting**: When struct fields include doc comments, separate each field block with a blank line for readability.
--   **Const/Var Formatting**: When const or var blocks include doc comments, separate each item block with a blank line for readability.
--   **Testing**: All new tests should use the `github.com/stretchr/testify` library, particularly the `assert` and `require` packages, for writing assertions.
--   **Test Runs**: Always run the test suite after making changes.
+
+

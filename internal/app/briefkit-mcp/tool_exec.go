@@ -15,20 +15,21 @@ import (
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 )
 
-func createExecTool(agentId agent.AgentID, agentConfig agent.Config, executionRepository agent.ExecutionRepository) (mcpserver.ServerTool, error) {
-	toolName := fmt.Sprintf("exec_%s", strcase.ToSnake(string(agentId)))
+func createExecTool(agentId agent.AgentID, agentConfig agent.Config, executionRepository agent.ExecutionRepository) mcpserver.ServerTool {
+	toolName := "ask_" + strcase.ToSnake(string(agentId))
 
 	tool := mcp.NewTool(toolName,
-		mcp.WithDescription("Runs a prompt on agent, optionally continuing a conversation or overriding the model."),
+
+		mcp.WithDescription(fmt.Sprintf("Ask an %s agent anything. Returns a result and a 'conversationId'. To continue a session, you MUST pass the returned 'conversationId' in subsequent calls.", agentId)),
 		mcp.WithString("prompt",
-			mcp.Description("Prompt to send to the agent."),
+			mcp.Description("The comprehensive instruction or message for the agent."),
 			mcp.Required(),
 		),
 		mcp.WithString("model",
 			mcp.Description("Optional model override for the execution."),
 		),
 		mcp.WithString("conversationId",
-			mcp.Description("Conversation ID to continue an existing agent session."),
+			mcp.Description("Pass the 'conversationId' received from a previous execution to continue that specific session. Leave empty for new conversations."),
 		),
 	)
 
@@ -92,7 +93,7 @@ func createExecTool(agentId agent.AgentID, agentConfig agent.Config, executionRe
 				case agent.ExecutionFailed:
 					var errors []string
 					if status.Error != nil {
-						errors = append(errors, fmt.Sprintf("%s", *status.Error))
+						errors = append(errors, *status.Error)
 					}
 
 					if status.ExitCode != nil {
@@ -101,7 +102,6 @@ func createExecTool(agentId agent.AgentID, agentConfig agent.Config, executionRe
 
 					return mcp.NewToolResultErrorf("Execution failed. %s", strings.Join(errors, " ")), nil
 				}
-
 			}
 		}
 	}
@@ -109,5 +109,5 @@ func createExecTool(agentId agent.AgentID, agentConfig agent.Config, executionRe
 	return mcpserver.ServerTool{
 		Tool:    tool,
 		Handler: handler,
-	}, nil
+	}
 }

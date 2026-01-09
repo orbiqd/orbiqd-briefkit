@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "sse-server-1": {
+      "type": "sse",
+      "url": "https://api1.example.com/mcp"
+    },
+    "sse-server-2": {
+      "type": "sse",
+      "url": "https://api2.example.com/mcp",
+      "headers": {
+        "X-API-Key": "secret"
+      }
+    },
+    "websocket-server": {
+      "type": "websocket",
+      "url": "wss://mcp.example.com/ws",
+      "reconnect": true,
+      "timeout": 30
+    }
+  }
+}

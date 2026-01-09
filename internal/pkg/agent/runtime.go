@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 )
@@ -13,11 +14,14 @@ type RuntimeKind string
 type RuntimeConfig any
 
 type RuntimeFeatures struct {
-	// EnableWebSearch allow codex to use internal web-search tool, without allowing it to access internet.
+	// EnableWebSearch allows the agent to use internal web-search tool without accessing the internet.
 	EnableWebSearch *bool `json:"enableWebSearch"`
 
-	// EnableNetworkAccess
+	// EnableNetworkAccess allows the agent to access external network resources.
 	EnableNetworkAccess *bool `json:"enableNetworkAccess"`
+
+	// EnableSandbox overrides the agent's default sandbox configuration, forcing it to run in (or out of) sandbox mode.
+	EnableSandbox *bool `json:"enableSandbox"`
 }
 
 // RuntimeEventKind describes the type of runtime event emitted by a runtime instance.
@@ -116,6 +120,23 @@ type Runtime interface {
 
 	// GetInfo returns metadata about the runtime implementation.
 	GetInfo(ctx context.Context) (RuntimeInfo, error)
+
+	AddMCPServer(ctx context.Context, mcpServerName RuntimeMCPServerName, mcpServer RuntimeMCPServer) error
+
+	ListMCPServers(ctx context.Context) (map[RuntimeMCPServerName]RuntimeMCPServer, error)
+
+	RemoveMCPServer(ctx context.Context, mcpServerName RuntimeMCPServerName) error
+}
+
+type RuntimeMCPServerName string
+
+type RuntimeSTDIOMCPServer struct {
+	Command   string
+	Arguments []string
+}
+
+type RuntimeMCPServer struct {
+	STDIO *RuntimeSTDIOMCPServer
 }
 
 // RuntimeInfo describes runtime metadata.
@@ -179,4 +200,4 @@ type RuntimeInstance interface {
 }
 
 // ErrRuntimeNotFound indicates the requested runtime is not registered.
-var ErrRuntimeNotFound = fmt.Errorf("runtime not found")
+var ErrRuntimeNotFound = errors.New("runtime not found")

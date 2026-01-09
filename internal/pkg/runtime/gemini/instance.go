@@ -54,15 +54,12 @@ func newInstance(ctx context.Context, executionId agent.ExecutionID, executionIn
 
 	runtimeArguments := defaultArguments()
 
-	err = applyRuntimeConfigArguments(runtimeArguments, runtimeConfig)
+	err = applyRuntimeConfigArguments(runtimeConfig)
 	if err != nil {
 		return nil, fmt.Errorf("apply runtime config: %w", err)
 	}
 
-	err = applyRuntimeFeaturesArguments(runtimeArguments, runtimeFeatures)
-	if err != nil {
-		return nil, fmt.Errorf("apply runtime features: %w", err)
-	}
+	applyRuntimeFeaturesArguments(runtimeArguments, runtimeFeatures)
 
 	err = applyExecutionInputArguments(runtimeArguments, executionInput)
 	if err != nil {
@@ -77,8 +74,9 @@ func newInstance(ctx context.Context, executionId agent.ExecutionID, executionIn
 	// Construct arguments
 	instanceArgumentsList := runtimeArguments.ToList()
 
+	// #nosec G204 - path comes from LookupExecutable with hardcoded name, arguments are constructed internally
 	cmd := exec.CommandContext(ctx, path, instanceArgumentsList...)
-	
+
 	if executionInput.WorkingDirectory != nil && strings.TrimSpace(*executionInput.WorkingDirectory) != "" {
 		cmd.Dir = *executionInput.WorkingDirectory
 	} else {
@@ -97,22 +95,25 @@ func newInstance(ctx context.Context, executionId agent.ExecutionID, executionIn
 
 	// Setup logging
 	sessionLogDir := filepath.Join(logDir, "gemini", string(executionId), time.Now().Format("2006-01-02_15-04-05"))
-	if err := os.MkdirAll(sessionLogDir, 0755); err != nil {
+	if err := os.MkdirAll(sessionLogDir, 0750); err != nil {
 		return nil, fmt.Errorf("create session log directory: %w", err)
 	}
 
+	// #nosec G304 - sessionLogDir is constructed from controlled values
 	stdinLog, err := os.Create(filepath.Join(sessionLogDir, "stdin.log"))
 	if err != nil {
 		return nil, fmt.Errorf("create stdin log: %w", err)
 	}
 	instance.closers = append(instance.closers, stdinLog)
 
+	// #nosec G304 - sessionLogDir is constructed from controlled values
 	stdoutLog, err := os.Create(filepath.Join(sessionLogDir, "stdout.log"))
 	if err != nil {
 		return nil, fmt.Errorf("create stdout log: %w", err)
 	}
 	instance.closers = append(instance.closers, stdoutLog)
 
+	// #nosec G304 - sessionLogDir is constructed from controlled values
 	stderrLog, err := os.Create(filepath.Join(sessionLogDir, "stderr.log"))
 	if err != nil {
 		return nil, fmt.Errorf("create stderr log: %w", err)
@@ -153,11 +154,11 @@ func (instance *Instance) run(stdoutLog io.Writer) {
 	}()
 
 	parseErr := instance.watchGeminiEvents(stdoutLog)
-	
+
 	if parseErr != nil {
 		_, _ = io.Copy(io.Discard, instance.stdout)
 	}
-	
+
 	waitErr := instance.cmd.Wait()
 
 	if parseErr != nil {
@@ -190,11 +191,11 @@ func (instance *Instance) watchGeminiEvents(stdoutLog io.Writer) error {
 	// We use a scanner to read line by line because Gemini CLI might output non-JSON text
 	// (e.g. "Loaded cached credentials.") mixed with JSON lines.
 	scanner := bufio.NewScanner(io.TeeReader(instance.stdout, stdoutLog))
-	
+
 	for scanner.Scan() {
 		line := scanner.Text()
 		line = strings.TrimSpace(line)
-		
+
 		if line == "" {
 			continue
 		}
@@ -222,7 +223,7 @@ func (instance *Instance) watchGeminiEvents(stdoutLog io.Writer) error {
 			}
 		case "message":
 			if event.Role == "assistant" {
-				// We append content. 
+				// We append content.
 				instance.result.Response += event.Content
 			}
 		}

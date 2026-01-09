@@ -1,7 +1,9 @@
 package gemini
 
 import (
+	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
@@ -37,7 +39,7 @@ func (a *arguments) valueToString(value any) (string, error) {
 	switch v := value.(type) {
 	case string:
 		if strings.TrimSpace(v) == "" {
-			return "", fmt.Errorf("empty string")
+			return "", errors.New("empty string")
 		}
 		return v, nil
 	case bool:
@@ -47,11 +49,11 @@ func (a *arguments) valueToString(value any) (string, error) {
 		return "false", nil
 	case agent.ConversationID:
 		if strings.TrimSpace(string(v)) == "" {
-			return "", fmt.Errorf("empty string")
+			return "", errors.New("empty string")
 		}
 		return string(v), nil
 	case int:
-		return fmt.Sprintf("%d", v), nil
+		return strconv.Itoa(v), nil
 	default:
 		return "", fmt.Errorf("unsupported type %T", value)
 	}
@@ -61,7 +63,7 @@ func (a *arguments) ToList() []string {
 	var list []string
 
 	for flag := range a.flags {
-		list = append(list, fmt.Sprintf("--%s", flag))
+		list = append(list, "--"+flag)
 	}
 
 	for key, value := range a.values {

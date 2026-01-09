@@ -81,6 +81,7 @@ func (runtime *Runtime) GetInfo(ctx context.Context) (agent.RuntimeInfo, error) 
 		return agent.RuntimeInfo{}, fmt.Errorf("lookup gemini executable: %w", err)
 	}
 
+	// #nosec G204 - path comes from LookupExecutable with hardcoded name
 	output, err := exec.CommandContext(ctx, path, "--version").CombinedOutput()
 	if err != nil {
 		return agent.RuntimeInfo{}, fmt.Errorf("read gemini version: %w", err)
@@ -92,4 +93,16 @@ func (runtime *Runtime) GetInfo(ctx context.Context) (agent.RuntimeInfo, error) 
 	}
 
 	return agent.RuntimeInfo{Version: version}, nil
+}
+
+func (runtime *Runtime) AddMCPServer(ctx context.Context, mcpServerName agent.RuntimeMCPServerName, mcpServer agent.RuntimeMCPServer) error {
+	return errors.New("MCP server management not implemented for gemini runtime")
+}
+
+func (runtime *Runtime) ListMCPServers(ctx context.Context) (map[agent.RuntimeMCPServerName]agent.RuntimeMCPServer, error) {
+	return nil, errors.New("MCP server management not implemented for gemini runtime")
+}
+
+func (runtime *Runtime) RemoveMCPServer(ctx context.Context, mcpServerName agent.RuntimeMCPServerName) error {
+	return errors.New("MCP server management not implemented for gemini runtime")
 }

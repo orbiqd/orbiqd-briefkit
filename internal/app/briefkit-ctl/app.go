@@ -13,4 +13,5 @@ type Command struct {
 	Agent AgentCmd `cmd:"" help:"Manage agents"`
 	State StateCmd `cmd:"" help:"Manage state"`
 	Exec  ExecCmd  `cmd:"" help:"Run a prompt with specified model"`
+	Setup SetupCmd `cmd:"" help:"Setup BriefKit environment"`
 }
