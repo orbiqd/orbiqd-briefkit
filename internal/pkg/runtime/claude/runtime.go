@@ -86,6 +86,7 @@ func (runtime *Runtime) GetInfo(ctx context.Context) (agent.RuntimeInfo, error) 
 		return agent.RuntimeInfo{}, err
 	}
 
+	// #nosec G204 - path comes from locateExecutable which validates the executable
 	output, err := exec.CommandContext(ctx, path, "--version").CombinedOutput()
 	if err != nil {
 		return agent.RuntimeInfo{}, fmt.Errorf("read claude version: %w", err)
@@ -106,7 +107,7 @@ func (runtime *Runtime) AddMCPServer(ctx context.Context, mcpServerName agent.Ru
 
 	// Only stdio servers supported
 	if mcpServer.STDIO == nil {
-		return fmt.Errorf("add mcp server: only STDIO servers are supported")
+		return errors.New("add mcp server: only STDIO servers are supported")
 	}
 
 	fs := afero.NewOsFs()

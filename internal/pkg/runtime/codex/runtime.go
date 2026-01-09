@@ -83,6 +83,7 @@ func (runtime *Runtime) GetInfo(ctx context.Context) (agent.RuntimeInfo, error) 
 		return agent.RuntimeInfo{}, fmt.Errorf("lookup codex executable: %w", err)
 	}
 
+	// #nosec G204 - path comes from LookupExecutable with hardcoded name
 	output, err := exec.CommandContext(ctx, path, "--version").CombinedOutput()
 	if err != nil {
 		return agent.RuntimeInfo{}, fmt.Errorf("read codex version: %w", err)
@@ -97,13 +98,13 @@ func (runtime *Runtime) GetInfo(ctx context.Context) (agent.RuntimeInfo, error) 
 }
 
 func (runtime *Runtime) AddMCPServer(ctx context.Context, mcpServerName agent.RuntimeMCPServerName, mcpServer agent.RuntimeMCPServer) error {
-	return fmt.Errorf("MCP server management not implemented for codex runtime")
+	return errors.New("MCP server management not implemented for codex runtime")
 }
 
 func (runtime *Runtime) ListMCPServers(ctx context.Context) (map[agent.RuntimeMCPServerName]agent.RuntimeMCPServer, error) {
-	return nil, fmt.Errorf("MCP server management not implemented for codex runtime")
+	return nil, errors.New("MCP server management not implemented for codex runtime")
 }
 
 func (runtime *Runtime) RemoveMCPServer(ctx context.Context, mcpServerName agent.RuntimeMCPServerName) error {
-	return fmt.Errorf("MCP server management not implemented for codex runtime")
+	return errors.New("MCP server management not implemented for codex runtime")
 }

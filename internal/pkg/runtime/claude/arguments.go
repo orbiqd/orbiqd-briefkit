@@ -41,25 +41,25 @@ func (arguments *ClaudeArguments) ToSlice() []string {
 	}
 
 	if arguments.OutputFormat != nil {
-		list = append(list, fmt.Sprintf("--output-format=%s", *arguments.OutputFormat))
+		list = append(list, "--output-format="+*arguments.OutputFormat)
 	}
 
 	if arguments.Model != nil {
-		list = append(list, fmt.Sprintf("--model=%s", *arguments.Model))
+		list = append(list, "--model="+*arguments.Model)
 	}
 
 	if arguments.ResumeSessionID != nil {
-		list = append(list, fmt.Sprintf("--resume=%s", *arguments.ResumeSessionID))
+		list = append(list, "--resume="+*arguments.ResumeSessionID)
 	}
 
 	if len(arguments.DisallowedTools) > 0 {
-		list = append(list, fmt.Sprintf("--disallowed-tools=%s", strings.Join(arguments.DisallowedTools, ",")))
+		list = append(list, "--disallowed-tools="+strings.Join(arguments.DisallowedTools, ","))
 	}
 
 	if len(arguments.Settings) > 0 {
 		settingsJSON, err := json.Marshal(arguments.Settings)
 		if err == nil {
-			list = append(list, fmt.Sprintf("--settings=%s", string(settingsJSON)))
+			list = append(list, "--settings="+string(settingsJSON))
 		}
 	}
 

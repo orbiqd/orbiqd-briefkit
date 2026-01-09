@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -38,7 +39,7 @@ func CreateLoggerFromConfig(config LogConfig) (*slog.Logger, error) {
 func parseLogLevel(value string) (slog.Level, error) {
 	normalized := strings.ToLower(strings.TrimSpace(value))
 	if normalized == "" {
-		return slog.LevelInfo, fmt.Errorf("log level is required")
+		return slog.LevelInfo, errors.New("log level is required")
 	}
 	switch normalized {
 	case "debug":
@@ -57,7 +58,7 @@ func parseLogLevel(value string) (slog.Level, error) {
 func createLogHandler(format string, output io.Writer, level slog.Level) (slog.Handler, error) {
 	normalizedFormat := strings.ToLower(strings.TrimSpace(format))
 	if normalizedFormat == "" {
-		return nil, fmt.Errorf("log format is required")
+		return nil, errors.New("log format is required")
 	}
 
 	switch normalizedFormat {

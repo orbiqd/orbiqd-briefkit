@@ -10,6 +10,17 @@ linters:
     - ineffassign
     - staticcheck
     - unused
+    - copyloopvar
+    - unconvert
+    - unparam
+    - perfsprint
+    - errorlint
+    - gosec
+    - bidichk
+    - noctx
+    - whitespace
+    - testifylint
+    - thelper
 
 formatters:
   enable:

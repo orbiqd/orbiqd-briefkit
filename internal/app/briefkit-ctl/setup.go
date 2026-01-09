@@ -2,6 +2,7 @@ package briefkitctl
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"maps"
@@ -123,7 +124,7 @@ func (command *SetupCmd) setupRuntimeAgentConfig(ctx context.Context, runtimeKin
 
 	runtimeFeatures, err := runtime.GetDefaultFeatures(ctx)
 	if err != nil {
-		return fmt.Errorf("get default features")
+		return errors.New("get default features")
 	}
 
 	if command.EnableSandbox != nil {

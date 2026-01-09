@@ -44,7 +44,7 @@ func ResolveExecutable(ctx context.Context, executableName string) (string, erro
 
 	if envPath, ok := os.LookupEnv(envVarName); ok {
 		if _, err := os.Stat(envPath); err != nil {
-			return "", fmt.Errorf("%w: executable from %s: %v", ErrExecutableNotFound, envVarName, err)
+			return "", fmt.Errorf("%w: executable from %s: %w", ErrExecutableNotFound, envVarName, err)
 		}
 		return envPath, nil
 	}

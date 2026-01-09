@@ -122,7 +122,7 @@ func TestReadWriteConfig(t *testing.T) {
 
 		testData := []byte(`{"mcpServers":{"test":{"type":"stdio","command":"test"}}}`)
 		err := writeClaudeConfig(readonlyFs, testData)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "operation not permitted")
 	})
 }
@@ -140,6 +140,7 @@ func TestReadClaudeConfig_RealWorldScenarios(t *testing.T) {
 			filename:    ".claude.valid-stdio-only.json",
 			expectError: false,
 			validateConfig: func(t *testing.T, data []byte) {
+				t.Helper()
 				servers := gjson.GetBytes(data, "mcpServers")
 				assert.True(t, servers.Exists())
 
@@ -165,6 +166,7 @@ func TestReadClaudeConfig_RealWorldScenarios(t *testing.T) {
 			filename:    ".claude.mixed-stdio-and-sse.json",
 			expectError: false,
 			validateConfig: func(t *testing.T, data []byte) {
+				t.Helper()
 				assert.True(t, gjson.GetBytes(data, "mcpServers.filesystem").Exists())
 				assert.True(t, gjson.GetBytes(data, "mcpServers.remote-api").Exists())
 				assert.True(t, gjson.GetBytes(data, "mcpServers.local-python").Exists())
@@ -179,6 +181,7 @@ func TestReadClaudeConfig_RealWorldScenarios(t *testing.T) {
 			filename:    ".claude.mixed-stdio-and-websocket.json",
 			expectError: false,
 			validateConfig: func(t *testing.T, data []byte) {
+				t.Helper()
 				assert.Equal(t, "stdio", gjson.GetBytes(data, "mcpServers.github.type").String())
 				assert.Equal(t, "websocket", gjson.GetBytes(data, "mcpServers.websocket-service.type").String())
 			},
@@ -188,6 +191,7 @@ func TestReadClaudeConfig_RealWorldScenarios(t *testing.T) {
 			filename:    ".claude.all-non-stdio.json",
 			expectError: false,
 			validateConfig: func(t *testing.T, data []byte) {
+				t.Helper()
 				assert.Equal(t, "sse", gjson.GetBytes(data, "mcpServers.sse-server-1.type").String())
 				assert.Equal(t, "sse", gjson.GetBytes(data, "mcpServers.sse-server-2.type").String())
 				assert.Equal(t, "websocket", gjson.GetBytes(data, "mcpServers.websocket-server.type").String())
@@ -198,6 +202,7 @@ func TestReadClaudeConfig_RealWorldScenarios(t *testing.T) {
 			filename:    ".claude.empty-servers.json",
 			expectError: false,
 			validateConfig: func(t *testing.T, data []byte) {
+				t.Helper()
 				servers := gjson.GetBytes(data, "mcpServers")
 				if servers.Exists() {
 					// Count should be 0
@@ -215,6 +220,7 @@ func TestReadClaudeConfig_RealWorldScenarios(t *testing.T) {
 			filename:    ".claude.with-other-fields.json",
 			expectError: false,
 			validateConfig: func(t *testing.T, data []byte) {
+				t.Helper()
 				assert.True(t, gjson.GetBytes(data, "mcpServers.filesystem").Exists())
 
 				// Check other fields exist
@@ -230,6 +236,7 @@ func TestReadClaudeConfig_RealWorldScenarios(t *testing.T) {
 			filename:    ".claude.complex-stdio.json",
 			expectError: false,
 			validateConfig: func(t *testing.T, data []byte) {
+				t.Helper()
 				assert.Equal(t, "stdio", gjson.GetBytes(data, "mcpServers.complex-server.type").String())
 				assert.Equal(t, "/usr/local/bin/custom-mcp-server", gjson.GetBytes(data, "mcpServers.complex-server.command").String())
 

@@ -1,6 +1,7 @@
 package briefkitctl
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -12,5 +13,5 @@ type AgentAddCmd struct {
 
 func (a *AgentAddCmd) Run() error {
 	fmt.Println("Agent add - not implemented")
-	return fmt.Errorf("not implemented")
+	return errors.New("not implemented")
 }

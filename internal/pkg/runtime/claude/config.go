@@ -2,13 +2,14 @@ package claude
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 
 	"github.com/spf13/afero"
 )
 
-var ErrMCPServerNotFound = fmt.Errorf("mcp server not found")
+var ErrMCPServerNotFound = errors.New("mcp server not found")
 
 // readClaudeConfig reads raw ~/.claude.json bytes
 // Returns empty JSON object (without error) if file doesn't exist
@@ -32,7 +33,7 @@ func readClaudeConfig(fs afero.Fs) ([]byte, error) {
 
 	// Validate JSON syntax
 	if !json.Valid(data) {
-		return nil, fmt.Errorf("unmarshal config: invalid JSON syntax")
+		return nil, errors.New("unmarshal config: invalid JSON syntax")
 	}
 
 	return data, nil

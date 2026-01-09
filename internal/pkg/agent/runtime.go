@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 )
@@ -199,4 +200,4 @@ type RuntimeInstance interface {
 }
 
 // ErrRuntimeNotFound indicates the requested runtime is not registered.
-var ErrRuntimeNotFound = fmt.Errorf("runtime not found")
+var ErrRuntimeNotFound = errors.New("runtime not found")

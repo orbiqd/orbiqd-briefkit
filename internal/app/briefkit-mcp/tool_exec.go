@@ -15,8 +15,8 @@ import (
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 )
 
-func createExecTool(agentId agent.AgentID, agentConfig agent.Config, executionRepository agent.ExecutionRepository) (mcpserver.ServerTool, error) {
-	toolName := fmt.Sprintf("ask_%s", strcase.ToSnake(string(agentId)))
+func createExecTool(agentId agent.AgentID, agentConfig agent.Config, executionRepository agent.ExecutionRepository) mcpserver.ServerTool {
+	toolName := "ask_" + strcase.ToSnake(string(agentId))
 
 	tool := mcp.NewTool(toolName,
 
@@ -102,7 +102,6 @@ func createExecTool(agentId agent.AgentID, agentConfig agent.Config, executionRe
 
 					return mcp.NewToolResultErrorf("Execution failed. %s", strings.Join(errors, " ")), nil
 				}
-
 			}
 		}
 	}
@@ -110,5 +109,5 @@ func createExecTool(agentId agent.AgentID, agentConfig agent.Config, executionRe
 	return mcpserver.ServerTool{
 		Tool:    tool,
 		Handler: handler,
-	}, nil
+	}
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestClaudeArguments_ToSlice(t *testing.T) {
@@ -84,7 +85,7 @@ func TestClaudeArguments_ApplyExecutionInput(t *testing.T) {
 		}
 
 		err := args.ApplyExecutionInput(input)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "test-model", *args.Model)
 		assert.Equal(t, "test-conv-id", *args.ResumeSessionID)
 	})
@@ -97,7 +98,7 @@ func TestClaudeArguments_ApplyExecutionInput(t *testing.T) {
 		}
 
 		err := args.ApplyExecutionInput(input)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Nil(t, args.Model)
 		assert.Nil(t, args.ResumeSessionID)
 	})
@@ -111,7 +112,7 @@ func TestClaudeArguments_ApplyRuntimeFeatures(t *testing.T) {
 		}
 
 		err := args.ApplyRuntimeFeatures(features)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Contains(t, args.DisallowedTools, "WebSearch")
 	})
 
@@ -122,7 +123,7 @@ func TestClaudeArguments_ApplyRuntimeFeatures(t *testing.T) {
 		}
 
 		err := args.ApplyRuntimeFeatures(features)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, args.DisallowedTools)
 	})
 
@@ -133,7 +134,7 @@ func TestClaudeArguments_ApplyRuntimeFeatures(t *testing.T) {
 		}
 
 		err := args.ApplyRuntimeFeatures(features)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, args.DisallowedTools)
 	})
 }
@@ -178,7 +179,7 @@ func TestClaudeArguments_ApplyRuntimeConfig(t *testing.T) {
 		config := make(chan int)
 
 		err := args.ApplyRuntimeConfig(config)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "marshal claude runtime config")
 	})
 }

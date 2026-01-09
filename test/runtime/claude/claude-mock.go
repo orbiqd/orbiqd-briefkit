@@ -87,7 +87,7 @@ func main() {
 	time.Sleep(10 * time.Millisecond)
 
 	// Event 2: Assistant response
-	responseVisibleText := fmt.Sprintf("Mock response to: %s", prompt)
+	responseVisibleText := "Mock response to: " + prompt
 
 	// Jeśli podano model, dodajemy info
 	if CLI.Model != "" {

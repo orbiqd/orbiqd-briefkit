@@ -16,7 +16,8 @@ func Spawn(ctx context.Context, executionId agent.ExecutionID) error {
 		return fmt.Errorf("resolve executable: %w", err)
 	}
 
-	cmd := exec.Command(executablePath, string(executionId))
+	// #nosec G204 - executablePath comes from ResolveExecutable, executionId is controlled
+	cmd := exec.CommandContext(ctx, executablePath, string(executionId))
 
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Setsid: true,

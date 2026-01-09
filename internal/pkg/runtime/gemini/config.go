@@ -13,7 +13,7 @@ type Config struct {
 	// No specific configuration needed for Gemini at the moment
 }
 
-func applyRuntimeConfigArguments(args *arguments, config agent.RuntimeConfig) error {
+func applyRuntimeConfigArguments(config agent.RuntimeConfig) error {
 	var geminiConfig Config
 
 	switch typed := config.(type) {
@@ -41,7 +41,7 @@ func applyRuntimeConfigArguments(args *arguments, config agent.RuntimeConfig) er
 	return nil
 }
 
-func applyRuntimeFeaturesArguments(args *arguments, features agent.RuntimeFeatures) error {
+func applyRuntimeFeaturesArguments(args *arguments, features agent.RuntimeFeatures) {
 	if features.EnableNetworkAccess != nil {
 		// If network access is FALSE, we enforce --sandbox
 		// Note: --sandbox flag usually enables sandbox, so it restricts access.
@@ -52,8 +52,6 @@ func applyRuntimeFeaturesArguments(args *arguments, features agent.RuntimeFeatur
 			args.SetFlag("sandbox")
 		}
 	}
-
-	return nil
 }
 
 func applyExecutionInputArguments(args *arguments, executionInput agent.ExecutionInput) error {
