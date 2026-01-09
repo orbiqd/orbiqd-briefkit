@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "github": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
+      "env": {
+        "GITHUB_TOKEN": "ghp_xxxxxxxxxxxx"
+      }
+    },
+    "websocket-service": {
+      "type": "websocket",
+      "url": "wss://mcp.example.com/ws",
+      "reconnect": true
+    }
+  }
+}

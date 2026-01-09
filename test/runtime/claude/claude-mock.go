@@ -20,7 +20,7 @@ var CLI struct {
 	Resume          string `help:"Conversation ID to resume."`
 	Settings        string `help:"Settings JSON."`
 	DisallowedTools string `help:"Disallowed tools."`
-	
+
 	// Allow for extra args that might be passed but not explicitly handled yet
 	Extra []string `arg:"" optional:""`
 }
@@ -88,7 +88,7 @@ func main() {
 
 	// Event 2: Assistant response
 	responseVisibleText := fmt.Sprintf("Mock response to: %s", prompt)
-	
+
 	// Jeśli podano model, dodajemy info
 	if CLI.Model != "" {
 		responseVisibleText += fmt.Sprintf(" (Model: %s)", CLI.Model)
