@@ -11,6 +11,9 @@ import (
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/cli"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
+	"github.com/spf13/afero"
+	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 )
 
 var semverPattern = regexp.MustCompile(`\d+\.\d+\.\d+`)
@@ -101,19 +104,41 @@ func (runtime *Runtime) AddMCPServer(ctx context.Context, mcpServerName agent.Ru
 		return err
 	}
 
-	config, err := readClaudeConfig()
+	// Only stdio servers supported
+	if mcpServer.STDIO == nil {
+		return fmt.Errorf("add mcp server: only STDIO servers are supported")
+	}
+
+	fs := afero.NewOsFs()
+
+	// Read current config
+	data, err := readClaudeConfig(fs)
 	if err != nil {
 		return fmt.Errorf("add mcp server: %w", err)
 	}
 
-	claudeServer, err := toClaudeMCPServerConfig(mcpServer)
+	// Use sjson to add server fields
+	serverPath := fmt.Sprintf("mcpServers.%s", mcpServerName)
+
+	data, err = sjson.SetBytes(data, serverPath+".type", "stdio")
 	if err != nil {
 		return fmt.Errorf("add mcp server: %w", err)
 	}
 
-	config.MCPServers[string(mcpServerName)] = claudeServer
+	data, err = sjson.SetBytes(data, serverPath+".command", mcpServer.STDIO.Command)
+	if err != nil {
+		return fmt.Errorf("add mcp server: %w", err)
+	}
 
-	if err := writeClaudeConfig(config); err != nil {
+	if len(mcpServer.STDIO.Arguments) > 0 {
+		data, err = sjson.SetBytes(data, serverPath+".args", mcpServer.STDIO.Arguments)
+		if err != nil {
+			return fmt.Errorf("add mcp server: %w", err)
+		}
+	}
+
+	// Write back
+	if err := writeClaudeConfig(fs, data); err != nil {
 		return fmt.Errorf("add mcp server: %w", err)
 	}
 
@@ -125,20 +150,48 @@ func (runtime *Runtime) ListMCPServers(ctx context.Context) (map[agent.RuntimeMC
 		return nil, err
 	}
 
-	config, err := readClaudeConfig()
+	fs := afero.NewOsFs()
+	data, err := readClaudeConfig(fs)
 	if err != nil {
 		return nil, fmt.Errorf("list mcp servers: %w", err)
 	}
 
 	result := make(map[agent.RuntimeMCPServerName]agent.RuntimeMCPServer)
 
-	for name, claudeServer := range config.MCPServers {
-		runtimeServer, err := toRuntimeMCPServer(claudeServer)
-		if err != nil {
-			return nil, fmt.Errorf("list mcp servers: convert server %s: %w", name, err)
-		}
-		result[agent.RuntimeMCPServerName(name)] = runtimeServer
+	// Use gjson to iterate mcpServers
+	mcpServersJSON := gjson.GetBytes(data, "mcpServers")
+	if !mcpServersJSON.Exists() {
+		return result, nil
 	}
+
+	mcpServersJSON.ForEach(func(serverName, serverData gjson.Result) bool {
+		serverType := serverData.Get("type").String()
+
+		// CRITICAL: Skip non-stdio servers (SSE, websocket)
+		if serverType != "stdio" {
+			return true // continue
+		}
+
+		// Build RuntimeMCPServer directly from gjson
+		args := []string{}
+		argsResult := serverData.Get("args")
+		if argsResult.Exists() && argsResult.IsArray() {
+			argsResult.ForEach(func(_, arg gjson.Result) bool {
+				args = append(args, arg.String())
+				return true
+			})
+		}
+
+		runtimeServer := agent.RuntimeMCPServer{
+			STDIO: &agent.RuntimeSTDIOMCPServer{
+				Command:   serverData.Get("command").String(),
+				Arguments: args,
+			},
+		}
+
+		result[agent.RuntimeMCPServerName(serverName.String())] = runtimeServer
+		return true // continue
+	})
 
 	return result, nil
 }
@@ -148,18 +201,28 @@ func (runtime *Runtime) RemoveMCPServer(ctx context.Context, mcpServerName agent
 		return err
 	}
 
-	config, err := readClaudeConfig()
+	fs := afero.NewOsFs()
+
+	// Read config
+	data, err := readClaudeConfig(fs)
 	if err != nil {
 		return fmt.Errorf("remove mcp server: %w", err)
 	}
 
-	if _, exists := config.MCPServers[string(mcpServerName)]; !exists {
+	// Check if server exists
+	serverPath := fmt.Sprintf("mcpServers.%s", mcpServerName)
+	if !gjson.GetBytes(data, serverPath).Exists() {
 		return fmt.Errorf("remove mcp server: %w", ErrMCPServerNotFound)
 	}
 
-	delete(config.MCPServers, string(mcpServerName))
+	// Delete using sjson
+	data, err = sjson.DeleteBytes(data, serverPath)
+	if err != nil {
+		return fmt.Errorf("remove mcp server: %w", err)
+	}
 
-	if err := writeClaudeConfig(config); err != nil {
+	// Write back
+	if err := writeClaudeConfig(fs, data); err != nil {
 		return fmt.Errorf("remove mcp server: %w", err)
 	}
 

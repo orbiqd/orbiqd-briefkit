@@ -78,7 +78,7 @@ func newInstance(ctx context.Context, executionId agent.ExecutionID, executionIn
 	instanceArgumentsList := runtimeArguments.ToList()
 
 	cmd := exec.CommandContext(ctx, path, instanceArgumentsList...)
-	
+
 	if executionInput.WorkingDirectory != nil && strings.TrimSpace(*executionInput.WorkingDirectory) != "" {
 		cmd.Dir = *executionInput.WorkingDirectory
 	} else {
@@ -153,11 +153,11 @@ func (instance *Instance) run(stdoutLog io.Writer) {
 	}()
 
 	parseErr := instance.watchGeminiEvents(stdoutLog)
-	
+
 	if parseErr != nil {
 		_, _ = io.Copy(io.Discard, instance.stdout)
 	}
-	
+
 	waitErr := instance.cmd.Wait()
 
 	if parseErr != nil {
@@ -190,11 +190,11 @@ func (instance *Instance) watchGeminiEvents(stdoutLog io.Writer) error {
 	// We use a scanner to read line by line because Gemini CLI might output non-JSON text
 	// (e.g. "Loaded cached credentials.") mixed with JSON lines.
 	scanner := bufio.NewScanner(io.TeeReader(instance.stdout, stdoutLog))
-	
+
 	for scanner.Scan() {
 		line := scanner.Text()
 		line = strings.TrimSpace(line)
-		
+
 		if line == "" {
 			continue
 		}
@@ -222,7 +222,7 @@ func (instance *Instance) watchGeminiEvents(stdoutLog io.Writer) error {
 			}
 		case "message":
 			if event.Role == "assistant" {
-				// We append content. 
+				// We append content.
 				instance.result.Response += event.Content
 			}
 		}

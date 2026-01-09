@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
+	"github.com/iancoleman/strcase"
 	"github.com/mitchellh/go-homedir"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/process"
 )
@@ -40,11 +40,11 @@ func ResolveRuntimeLogDir() (string, error) {
 }
 
 func ResolveExecutable(ctx context.Context, executableName string) (string, error) {
-	envVarName := "BRIEFKIT_" + strings.ToUpper(strings.ReplaceAll(executableName, "-", "_")) + "_PATH"
+	envVarName := "BRIEFKIT_" + strcase.ToScreamingSnake(executableName) + "_PATH"
 
 	if envPath, ok := os.LookupEnv(envVarName); ok {
 		if _, err := os.Stat(envPath); err != nil {
-			return "", fmt.Errorf("executable from %s not found: %w", envVarName, err)
+			return "", fmt.Errorf("%w: executable from %s: %v", ErrExecutableNotFound, envVarName, err)
 		}
 		return envPath, nil
 	}
