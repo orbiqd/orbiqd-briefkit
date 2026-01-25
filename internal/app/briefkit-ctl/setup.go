@@ -99,9 +99,13 @@ func (command *SetupCmd) setupRuntime(ctx context.Context, runtimeKind agent.Run
 	}
 
 	if command.SetupAgentMCP {
-		err := command.setupRuntimeAgentMCP(ctx, runtimeKind, runtime)
-		if err != nil {
-			return fmt.Errorf("agent mcp: %w", err)
+		if registrar, isRegistrar := runtime.(agent.RuntimeMCPRegistrar); isRegistrar {
+			err := command.setupRuntimeAgentMCP(ctx, runtimeKind, registrar)
+			if err != nil {
+				return fmt.Errorf("agent mcp: %w", err)
+			}
+		} else {
+			logger.Warn("Runtime does not support MCP server registration.")
 		}
 	} else {
 		logger.Warn("Skipping agent MCP server setup.")
@@ -160,7 +164,7 @@ func (command *SetupCmd) setupRuntimeAgentConfig(ctx context.Context, runtimeKin
 	return nil
 }
 
-func (command *SetupCmd) setupRuntimeAgentMCP(ctx context.Context, runtimeKind agent.RuntimeKind, runtime agent.Runtime) error {
+func (command *SetupCmd) setupRuntimeAgentMCP(ctx context.Context, runtimeKind agent.RuntimeKind, registrar agent.RuntimeMCPRegistrar) error {
 	mcpServerName := agent.RuntimeMCPServerName("briefkit")
 
 	logger := slog.With(
@@ -169,23 +173,6 @@ func (command *SetupCmd) setupRuntimeAgentMCP(ctx context.Context, runtimeKind a
 	)
 
 	logger.Debug("Configuring agent MCP server.")
-
-	mcpServers, err := runtime.ListMCPServers(ctx)
-	if err != nil {
-		return fmt.Errorf("list mcp servers: %w", err)
-	}
-
-	_, hasMcpServer := mcpServers[mcpServerName]
-	if hasMcpServer && !command.Force {
-		return fmt.Errorf("%s mcp server already exists in %s runtime", mcpServerName, runtimeKind)
-	}
-
-	if hasMcpServer {
-		err = runtime.RemoveMCPServer(ctx, mcpServerName)
-		if err != nil {
-			return fmt.Errorf("remove %s mcp server from %s: %w", mcpServerName, runtimeKind, err)
-		}
-	}
 
 	executablePath, err := cli.ResolveExecutable(ctx, cli.ExecutableMCP)
 	if err != nil {
@@ -198,9 +185,9 @@ func (command *SetupCmd) setupRuntimeAgentMCP(ctx context.Context, runtimeKind a
 		},
 	}
 
-	err = runtime.AddMCPServer(ctx, mcpServerName, mcpServer)
+	err = registrar.RegisterMCPServer(ctx, mcpServerName, mcpServer)
 	if err != nil {
-		return fmt.Errorf("add %s mcp server to %s: %w", mcpServerName, runtimeKind, err)
+		return fmt.Errorf("register %s mcp server to %s: %w", mcpServerName, runtimeKind, err)
 	}
 
 	return nil

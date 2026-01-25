@@ -9,7 +9,7 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/mitchellh/go-homedir"
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/process"
+	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
 )
 
 var ErrExecutableNotFound = errors.New("executable not found")
@@ -66,7 +66,7 @@ func ResolveExecutable(ctx context.Context, executableName string) (string, erro
 		return executablePath, nil
 	}
 
-	pathExecutable, err := process.LookupExecutable(ctx, []string{executableName})
+	pathExecutable, err := utils.LookupExecutable(ctx, []string{executableName})
 	if err != nil {
 		return "", ErrExecutableNotFound
 	}

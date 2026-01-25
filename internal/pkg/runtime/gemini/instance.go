@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/process"
+	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
 )
 
 type Instance struct {
@@ -47,7 +47,7 @@ func newInstance(ctx context.Context, executionId agent.ExecutionID, executionIn
 		return nil, err
 	}
 
-	path, err := process.LookupExecutable(ctx, []string{"gemini"})
+	path, err := utils.LookupExecutable(ctx, []string{"gemini"})
 	if err != nil {
 		return nil, fmt.Errorf("lookup gemini executable: %w", err)
 	}

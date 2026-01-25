@@ -120,12 +120,6 @@ type Runtime interface {
 
 	// GetInfo returns metadata about the runtime implementation.
 	GetInfo(ctx context.Context) (RuntimeInfo, error)
-
-	AddMCPServer(ctx context.Context, mcpServerName RuntimeMCPServerName, mcpServer RuntimeMCPServer) error
-
-	ListMCPServers(ctx context.Context) (map[RuntimeMCPServerName]RuntimeMCPServer, error)
-
-	RemoveMCPServer(ctx context.Context, mcpServerName RuntimeMCPServerName) error
 }
 
 type RuntimeMCPServerName string
@@ -137,6 +131,11 @@ type RuntimeSTDIOMCPServer struct {
 
 type RuntimeMCPServer struct {
 	STDIO *RuntimeSTDIOMCPServer
+}
+
+// RuntimeMCPRegistrar is implemented by runtimes that support MCP server registration via CLI.
+type RuntimeMCPRegistrar interface {
+	RegisterMCPServer(ctx context.Context, serverName RuntimeMCPServerName, server RuntimeMCPServer) error
 }
 
 // RuntimeInfo describes runtime metadata.

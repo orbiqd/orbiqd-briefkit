@@ -11,9 +11,6 @@ import (
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/cli"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
-	"github.com/spf13/afero"
-	"github.com/tidwall/gjson"
-	"github.com/tidwall/sjson"
 )
 
 var semverPattern = regexp.MustCompile(`\d+\.\d+\.\d+`)
@@ -100,131 +97,50 @@ func (runtime *Runtime) GetInfo(ctx context.Context) (agent.RuntimeInfo, error) 
 	return agent.RuntimeInfo{Version: version}, nil
 }
 
-func (runtime *Runtime) AddMCPServer(ctx context.Context, mcpServerName agent.RuntimeMCPServerName, mcpServer agent.RuntimeMCPServer) error {
+func (runtime *Runtime) RegisterMCPServer(ctx context.Context, serverName agent.RuntimeMCPServerName, server agent.RuntimeMCPServer) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
 
-	// Only stdio servers supported
-	if mcpServer.STDIO == nil {
-		return errors.New("add mcp server: only STDIO servers are supported")
+	name := strings.TrimSpace(string(serverName))
+	if name == "" {
+		return errors.New("missing mcp server name")
 	}
 
-	fs := afero.NewOsFs()
+	if server.STDIO == nil {
+		return errors.New("missing mcp server stdio configuration")
+	}
 
-	// Read current config
-	data, err := readClaudeConfig(fs)
+	command := strings.TrimSpace(server.STDIO.Command)
+	if command == "" {
+		return errors.New("missing mcp server stdio command")
+	}
+
+	path, err := locateExecutable(ctx)
 	if err != nil {
-		return fmt.Errorf("add mcp server: %w", err)
-	}
-
-	// Use sjson to add server fields
-	serverPath := fmt.Sprintf("mcpServers.%s", mcpServerName)
-
-	data, err = sjson.SetBytes(data, serverPath+".type", "stdio")
-	if err != nil {
-		return fmt.Errorf("add mcp server: %w", err)
-	}
-
-	data, err = sjson.SetBytes(data, serverPath+".command", mcpServer.STDIO.Command)
-	if err != nil {
-		return fmt.Errorf("add mcp server: %w", err)
-	}
-
-	if len(mcpServer.STDIO.Arguments) > 0 {
-		data, err = sjson.SetBytes(data, serverPath+".args", mcpServer.STDIO.Arguments)
-		if err != nil {
-			return fmt.Errorf("add mcp server: %w", err)
-		}
-	}
-
-	// Write back
-	if err := writeClaudeConfig(fs, data); err != nil {
-		return fmt.Errorf("add mcp server: %w", err)
-	}
-
-	return nil
-}
-
-func (runtime *Runtime) ListMCPServers(ctx context.Context) (map[agent.RuntimeMCPServerName]agent.RuntimeMCPServer, error) {
-	if err := ctx.Err(); err != nil {
-		return nil, err
-	}
-
-	fs := afero.NewOsFs()
-	data, err := readClaudeConfig(fs)
-	if err != nil {
-		return nil, fmt.Errorf("list mcp servers: %w", err)
-	}
-
-	result := make(map[agent.RuntimeMCPServerName]agent.RuntimeMCPServer)
-
-	// Use gjson to iterate mcpServers
-	mcpServersJSON := gjson.GetBytes(data, "mcpServers")
-	if !mcpServersJSON.Exists() {
-		return result, nil
-	}
-
-	mcpServersJSON.ForEach(func(serverName, serverData gjson.Result) bool {
-		serverType := serverData.Get("type").String()
-
-		// CRITICAL: Skip non-stdio servers (SSE, websocket)
-		if serverType != "stdio" {
-			return true // continue
-		}
-
-		// Build RuntimeMCPServer directly from gjson
-		args := []string{}
-		argsResult := serverData.Get("args")
-		if argsResult.Exists() && argsResult.IsArray() {
-			argsResult.ForEach(func(_, arg gjson.Result) bool {
-				args = append(args, arg.String())
-				return true
-			})
-		}
-
-		runtimeServer := agent.RuntimeMCPServer{
-			STDIO: &agent.RuntimeSTDIOMCPServer{
-				Command:   serverData.Get("command").String(),
-				Arguments: args,
-			},
-		}
-
-		result[agent.RuntimeMCPServerName(serverName.String())] = runtimeServer
-		return true // continue
-	})
-
-	return result, nil
-}
-
-func (runtime *Runtime) RemoveMCPServer(ctx context.Context, mcpServerName agent.RuntimeMCPServerName) error {
-	if err := ctx.Err(); err != nil {
 		return err
 	}
 
-	fs := afero.NewOsFs()
-
-	// Read config
-	data, err := readClaudeConfig(fs)
-	if err != nil {
-		return fmt.Errorf("remove mcp server: %w", err)
+	// #nosec G204 - path comes from locateExecutable which validates the executable
+	removeOutput, removeErr := exec.CommandContext(ctx, path, "mcp", "remove", "--scope", "user", name).CombinedOutput()
+	if removeErr != nil {
+		outputStr := strings.ToLower(strings.TrimSpace(string(removeOutput)))
+		if !strings.Contains(outputStr, "no mcp server found") {
+			return fmt.Errorf("claude mcp server removal: %s", strings.TrimSpace(string(removeOutput)))
+		}
 	}
 
-	// Check if server exists
-	serverPath := fmt.Sprintf("mcpServers.%s", mcpServerName)
-	if !gjson.GetBytes(data, serverPath).Exists() {
-		return fmt.Errorf("remove mcp server: %w", ErrMCPServerNotFound)
-	}
+	addArgs := []string{"mcp", "add", "--scope", "user", name, command}
+	addArgs = append(addArgs, server.STDIO.Arguments...)
 
-	// Delete using sjson
-	data, err = sjson.DeleteBytes(data, serverPath)
-	if err != nil {
-		return fmt.Errorf("remove mcp server: %w", err)
-	}
-
-	// Write back
-	if err := writeClaudeConfig(fs, data); err != nil {
-		return fmt.Errorf("remove mcp server: %w", err)
+	// #nosec G204 - path comes from locateExecutable which validates the executable
+	addOutput, addErr := exec.CommandContext(ctx, path, addArgs...).CombinedOutput()
+	if addErr != nil {
+		trimmedOutput := strings.TrimSpace(string(addOutput))
+		if trimmedOutput == "" {
+			return fmt.Errorf("claude mcp server registration: %w", addErr)
+		}
+		return fmt.Errorf("claude mcp server registration: %s", trimmedOutput)
 	}
 
 	return nil
