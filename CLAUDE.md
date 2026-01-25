@@ -3,6 +3,8 @@
 ## IMPORTANT DIRECTIVES
 1. When working with GIT, must always follow instructions from .ai/GIT_INSTRUCTIONS.md
 2. When coding, must always follow instructions from .ai/CODING_INSTRUCTIONS.md
+3. When coding unit test, must always follow instructions from .ai/CODING_INSTRUCTIONS.md and .ai/UNIT_TESTS_INSTRUCTIONS.md
+4. Execute all "make" commands without sandbox if possible.
 
 ## Language and interactions
 1. Write all comments, code, and names in English.
