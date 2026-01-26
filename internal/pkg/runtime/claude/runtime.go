@@ -10,13 +10,15 @@ import (
 
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/cli"
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/process"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
 )
 
 var semverPattern = regexp.MustCompile(`\d+\.\d+\.\d+`)
 
 const Claude = agent.RuntimeKind("claude")
+
+type RuntimeConfig struct {
+}
 
 type Runtime struct {
 }
@@ -31,7 +33,7 @@ func (runtime *Runtime) Execute(ctx context.Context, executionId agent.Execution
 		return nil, err
 	}
 
-	runtimeConfig, err := utils.AnyToStruct[Config](agentConfig.Runtime.Config)
+	runtimeConfig, err := utils.AnyToStruct[RuntimeConfig](agentConfig.Runtime.Config)
 	if err != nil {
 		return nil, fmt.Errorf("convert runtime config: %w", err)
 	}
@@ -48,7 +50,7 @@ func (runtime *Runtime) Discovery(ctx context.Context) (bool, error) {
 		return false, err
 	}
 
-	_, err := process.LookupExecutable(ctx, []string{"claude", "claude-code"})
+	_, err := locateExecutable(ctx)
 	if err == nil {
 		return true, nil
 	}
@@ -61,7 +63,7 @@ func (runtime *Runtime) Discovery(ctx context.Context) (bool, error) {
 }
 
 func (runtime *Runtime) GetDefaultConfig(ctx context.Context) (agent.RuntimeConfig, error) {
-	return Config{}, nil
+	return RuntimeConfig{}, nil
 }
 
 func (runtime *Runtime) GetDefaultFeatures(ctx context.Context) (agent.RuntimeFeatures, error) {
@@ -76,11 +78,12 @@ func (runtime *Runtime) GetInfo(ctx context.Context) (agent.RuntimeInfo, error) 
 		return agent.RuntimeInfo{}, err
 	}
 
-	path, err := process.LookupExecutable(ctx, []string{"claude", "claude-code"})
+	path, err := locateExecutable(ctx)
 	if err != nil {
-		return agent.RuntimeInfo{}, fmt.Errorf("lookup claude executable: %w", err)
+		return agent.RuntimeInfo{}, err
 	}
 
+	// #nosec G204 - path comes from locateExecutable which validates the executable
 	output, err := exec.CommandContext(ctx, path, "--version").CombinedOutput()
 	if err != nil {
 		return agent.RuntimeInfo{}, fmt.Errorf("read claude version: %w", err)
@@ -92,4 +95,53 @@ func (runtime *Runtime) GetInfo(ctx context.Context) (agent.RuntimeInfo, error) 
 	}
 
 	return agent.RuntimeInfo{Version: version}, nil
+}
+
+func (runtime *Runtime) RegisterMCPServer(ctx context.Context, serverName agent.RuntimeMCPServerName, server agent.RuntimeMCPServer) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	name := strings.TrimSpace(string(serverName))
+	if name == "" {
+		return errors.New("missing mcp server name")
+	}
+
+	if server.STDIO == nil {
+		return errors.New("missing mcp server stdio configuration")
+	}
+
+	command := strings.TrimSpace(server.STDIO.Command)
+	if command == "" {
+		return errors.New("missing mcp server stdio command")
+	}
+
+	path, err := locateExecutable(ctx)
+	if err != nil {
+		return err
+	}
+
+	// #nosec G204 - path comes from locateExecutable which validates the executable
+	removeOutput, removeErr := exec.CommandContext(ctx, path, "mcp", "remove", "--scope", "user", name).CombinedOutput()
+	if removeErr != nil {
+		outputStr := strings.ToLower(strings.TrimSpace(string(removeOutput)))
+		if !strings.Contains(outputStr, "no mcp server found") {
+			return fmt.Errorf("claude mcp server removal: %s", strings.TrimSpace(string(removeOutput)))
+		}
+	}
+
+	addArgs := []string{"mcp", "add", "--scope", "user", name, command}
+	addArgs = append(addArgs, server.STDIO.Arguments...)
+
+	// #nosec G204 - path comes from locateExecutable which validates the executable
+	addOutput, addErr := exec.CommandContext(ctx, path, addArgs...).CombinedOutput()
+	if addErr != nil {
+		trimmedOutput := strings.TrimSpace(string(addOutput))
+		if trimmedOutput == "" {
+			return fmt.Errorf("claude mcp server registration: %w", addErr)
+		}
+		return fmt.Errorf("claude mcp server registration: %s", trimmedOutput)
+	}
+
+	return nil
 }

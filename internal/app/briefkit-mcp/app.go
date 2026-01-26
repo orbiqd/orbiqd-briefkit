@@ -30,10 +30,7 @@ func (command *Command) Run(ctx context.Context, agentConfigRepository agent.Con
 			return fmt.Errorf("get agent config: %s: %w", agentId, err)
 		}
 
-		agentExecTool, err := createExecTool(agentId, agentConfig, executionRepository)
-		if err != nil {
-			return fmt.Errorf("create agent exec tool: %s: %w", agentId, err)
-		}
+		agentExecTool := createExecTool(agentId, agentConfig, executionRepository)
 
 		agentExecTools = append(agentExecTools, agentExecTool)
 	}

@@ -10,7 +10,6 @@ import (
 
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/cli"
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/process"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
 )
 
@@ -48,7 +47,7 @@ func (runtime *Runtime) Discovery(ctx context.Context) (bool, error) {
 		return false, err
 	}
 
-	_, err := process.LookupExecutable(ctx, []string{"gemini"})
+	_, err := utils.LookupExecutable(ctx, []string{"gemini"})
 	if err == nil {
 		return true, nil
 	}
@@ -76,11 +75,12 @@ func (runtime *Runtime) GetInfo(ctx context.Context) (agent.RuntimeInfo, error) 
 		return agent.RuntimeInfo{}, err
 	}
 
-	path, err := process.LookupExecutable(ctx, []string{"gemini"})
+	path, err := utils.LookupExecutable(ctx, []string{"gemini"})
 	if err != nil {
 		return agent.RuntimeInfo{}, fmt.Errorf("lookup gemini executable: %w", err)
 	}
 
+	// #nosec G204 - path comes from LookupExecutable with hardcoded name
 	output, err := exec.CommandContext(ctx, path, "--version").CombinedOutput()
 	if err != nil {
 		return agent.RuntimeInfo{}, fmt.Errorf("read gemini version: %w", err)
@@ -92,4 +92,55 @@ func (runtime *Runtime) GetInfo(ctx context.Context) (agent.RuntimeInfo, error) 
 	}
 
 	return agent.RuntimeInfo{Version: version}, nil
+}
+
+func (runtime *Runtime) RegisterMCPServer(ctx context.Context, serverName agent.RuntimeMCPServerName, server agent.RuntimeMCPServer) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	name := strings.TrimSpace(string(serverName))
+	if name == "" {
+		return errors.New("missing mcp server name")
+	}
+
+	if server.STDIO == nil {
+		return errors.New("missing mcp server stdio configuration")
+	}
+
+	command := strings.TrimSpace(server.STDIO.Command)
+	if command == "" {
+		return errors.New("missing mcp server stdio command")
+	}
+
+	path, err := utils.LookupExecutable(ctx, []string{"gemini"})
+	if err != nil {
+		return err
+	}
+
+	// Remove existing server first (for consistency with Claude runtime)
+	// #nosec G204 - path comes from LookupExecutable with hardcoded name
+	removeOutput, removeErr := exec.CommandContext(ctx, path, "mcp", "remove", "--scope", "user", name).CombinedOutput()
+	if removeErr != nil {
+		outputStr := strings.ToLower(strings.TrimSpace(string(removeOutput)))
+		if !strings.Contains(outputStr, "not found") {
+			return fmt.Errorf("gemini mcp server removal: %s", strings.TrimSpace(string(removeOutput)))
+		}
+	}
+
+	// Add the server
+	addArgs := []string{"mcp", "add", "--scope", "user", name, command}
+	addArgs = append(addArgs, server.STDIO.Arguments...)
+
+	// #nosec G204 - path comes from LookupExecutable with hardcoded name
+	addOutput, addErr := exec.CommandContext(ctx, path, addArgs...).CombinedOutput()
+	if addErr != nil {
+		trimmedOutput := strings.TrimSpace(string(addOutput))
+		if trimmedOutput == "" {
+			return fmt.Errorf("gemini mcp server registration: %w", addErr)
+		}
+		return fmt.Errorf("gemini mcp server registration: %s", trimmedOutput)
+	}
+
+	return nil
 }

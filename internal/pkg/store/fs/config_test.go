@@ -99,7 +99,7 @@ func TestConfigRepository_Exists(t *testing.T) {
 
 	t.Run("invalid id", func(t *testing.T) {
 		exists, err := repo.Exists(ctx, agent.AgentID("Codex"))
-		assert.ErrorIs(t, err, agent.ErrAgentIDInvalid)
+		require.ErrorIs(t, err, agent.ErrAgentIDInvalid)
 		assert.False(t, exists)
 	})
 }

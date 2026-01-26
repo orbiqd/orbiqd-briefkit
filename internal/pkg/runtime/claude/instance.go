@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/process"
 )
 
 type Instance struct {
@@ -46,41 +45,36 @@ type claudeEvent struct {
 	Result string `json:"result,omitempty"`
 }
 
-func newInstance(ctx context.Context, executionId agent.ExecutionID, executionInput agent.ExecutionInput, runtimeConfig Config, runtimeFeatures agent.RuntimeFeatures, logDir string) (*Instance, error) {
+func newInstance(ctx context.Context, executionId agent.ExecutionID, executionInput agent.ExecutionInput, runtimeConfig RuntimeConfig, runtimeFeatures agent.RuntimeFeatures, logDir string) (*Instance, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
 
-	path, err := process.LookupExecutable(ctx, []string{"claude", "claude-code"})
+	path, err := locateExecutable(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("lookup claude executable: %w", err)
+		return nil, err
 	}
 
-	runtimeArguments := defaultArguments()
+	runtimeArguments := NewClaudeArguments()
 
-	err = applyRuntimeConfigArguments(runtimeArguments, runtimeConfig)
+	err = runtimeArguments.ApplyRuntimeConfig(runtimeConfig)
 	if err != nil {
 		return nil, fmt.Errorf("apply runtime config: %w", err)
 	}
 
-	err = applyRuntimeFeaturesArguments(runtimeArguments, runtimeFeatures)
+	err = runtimeArguments.ApplyRuntimeFeatures(runtimeFeatures)
 	if err != nil {
 		return nil, fmt.Errorf("apply runtime features: %w", err)
 	}
 
-	err = applyExecutionInputArguments(runtimeArguments, executionInput)
+	err = runtimeArguments.ApplyExecutionInput(executionInput)
 	if err != nil {
 		return nil, fmt.Errorf("apply execution input: %w", err)
 	}
 
-	runtimeArguments.SetFlag("print")
-	if err = runtimeArguments.SetValue("output-format", "stream-json"); err != nil {
-		return nil, fmt.Errorf("set output-format: %w", err)
-	}
-	runtimeArguments.SetFlag("verbose")
+	instanceArgumentsList := runtimeArguments.ToSlice()
 
-	instanceArgumentsList := runtimeArguments.ToList()
-
+	// #nosec G204 - path comes from LookupExecutable with hardcoded name, arguments are constructed internally
 	cmd := exec.CommandContext(ctx, path, instanceArgumentsList...)
 
 	if executionInput.WorkingDirectory != nil && strings.TrimSpace(*executionInput.WorkingDirectory) != "" {
@@ -100,22 +94,25 @@ func newInstance(ctx context.Context, executionId agent.ExecutionID, executionIn
 	}
 
 	sessionLogDir := filepath.Join(logDir, "claude", string(executionId), time.Now().Format("2006-01-02_15-04-05"))
-	if err := os.MkdirAll(sessionLogDir, 0755); err != nil {
+	if err := os.MkdirAll(sessionLogDir, 0750); err != nil {
 		return nil, fmt.Errorf("create session log directory: %w", err)
 	}
 
+	// #nosec G304 - sessionLogDir is constructed from controlled values
 	stdinLog, err := os.Create(filepath.Join(sessionLogDir, "stdin.log"))
 	if err != nil {
 		return nil, fmt.Errorf("create stdin log: %w", err)
 	}
 	instance.closers = append(instance.closers, stdinLog)
 
+	// #nosec G304 - sessionLogDir is constructed from controlled values
 	stdoutLog, err := os.Create(filepath.Join(sessionLogDir, "stdout.log"))
 	if err != nil {
 		return nil, fmt.Errorf("create stdout log: %w", err)
 	}
 	instance.closers = append(instance.closers, stdoutLog)
 
+	// #nosec G304 - sessionLogDir is constructed from controlled values
 	stderrLog, err := os.Create(filepath.Join(sessionLogDir, "stderr.log"))
 	if err != nil {
 		return nil, fmt.Errorf("create stderr log: %w", err)

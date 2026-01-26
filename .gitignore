@@ -1,0 +1,9 @@
+# IDEs
+.idea/
+
+# Agents
+.gemini/
+.claude/
+
+# Other
+*.out
