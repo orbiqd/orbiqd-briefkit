@@ -66,6 +66,15 @@ func TestClaudeArguments_ToSlice(t *testing.T) {
 				"--resume=",
 			},
 		},
+		{
+			name: "permission mode set",
+			args: &ClaudeArguments{
+				PermissionMode: utils.ToPointer("bypassPermissions"),
+			},
+			expected: []string{
+				"--permission-mode=bypassPermissions",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -105,13 +114,40 @@ func TestClaudeArguments_ApplyExecutionInput(t *testing.T) {
 }
 
 func TestClaudeArguments_ApplyRuntimeFeatures(t *testing.T) {
-	t.Run("does nothing", func(t *testing.T) {
+	t.Run("EnableSandbox=nil uses runtime default", func(t *testing.T) {
 		args := NewClaudeArguments()
 		features := agent.RuntimeFeatures{}
 
 		err := args.ApplyRuntimeFeatures(features)
 		require.NoError(t, err)
-		assert.Empty(t, args.DisallowedTools)
+		assert.Nil(t, args.PermissionMode)
+		assert.Nil(t, args.Settings["sandbox"])
+	})
+
+	t.Run("EnableSandbox=false sets bypassPermissions", func(t *testing.T) {
+		args := NewClaudeArguments()
+		features := agent.RuntimeFeatures{
+			EnableSandbox: utils.ToPointer(false),
+		}
+
+		err := args.ApplyRuntimeFeatures(features)
+		require.NoError(t, err)
+		require.NotNil(t, args.PermissionMode)
+		assert.Equal(t, "bypassPermissions", *args.PermissionMode)
+	})
+
+	t.Run("EnableSandbox=true enables sandbox via settings", func(t *testing.T) {
+		args := NewClaudeArguments()
+		features := agent.RuntimeFeatures{
+			EnableSandbox: utils.ToPointer(true),
+		}
+
+		err := args.ApplyRuntimeFeatures(features)
+		require.NoError(t, err)
+		assert.Nil(t, args.PermissionMode)
+		require.NotNil(t, args.Settings["sandbox"])
+		sandboxSettings := args.Settings["sandbox"].(map[string]any)
+		assert.True(t, sandboxSettings["enabled"].(bool))
 	})
 }
 
