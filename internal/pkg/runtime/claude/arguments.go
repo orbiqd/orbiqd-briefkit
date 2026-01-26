@@ -94,11 +94,7 @@ func (arguments *ClaudeArguments) ApplyRuntimeConfig(config agent.RuntimeConfig)
 	return nil
 }
 
-func (arguments *ClaudeArguments) ApplyRuntimeFeatures(features agent.RuntimeFeatures) error {
-	if features.EnableWebSearch != nil && !*features.EnableWebSearch {
-		arguments.DisallowedTools = append(arguments.DisallowedTools, "WebSearch")
-	}
-
+func (arguments *ClaudeArguments) ApplyRuntimeFeatures(_ agent.RuntimeFeatures) error {
 	return nil
 }
 

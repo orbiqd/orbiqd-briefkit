@@ -150,21 +150,14 @@ func TestCodexArguments_ApplyRuntimeConfig_WhenUnmarshalFails_ThenReturnsError(t
 	assert.Contains(t, err.Error(), "unmarshal codex runtime config")
 }
 
-func TestCodexArguments_ApplyRuntimeFeatures_WhenConfigOverridesNil_ThenInitializesAndSetsValues(t *testing.T) {
+func TestCodexArguments_ApplyRuntimeFeatures_WhenConfigOverridesNil_ThenKeepsNil(t *testing.T) {
 	args := &CodexArguments{}
-	features := agent.RuntimeFeatures{
-		EnableNetworkAccess: utils.ToPointer(true),
-		EnableWebSearch:     utils.ToPointer(false),
-	}
+	features := agent.RuntimeFeatures{}
 
 	err := args.ApplyRuntimeFeatures(features)
 
 	require.NoError(t, err)
-	require.NotNil(t, args.ConfigOverrides)
-	assert.Equal(t, map[string]any{
-		"sandbox_workspace_write.network_access": true,
-		"features.web_search_request":            false,
-	}, args.ConfigOverrides)
+	assert.Nil(t, args.ConfigOverrides)
 }
 
 func TestCodexArguments_ApplyRuntimeFeatures_WhenFeaturesNil_ThenKeepsExistingOverrides(t *testing.T) {

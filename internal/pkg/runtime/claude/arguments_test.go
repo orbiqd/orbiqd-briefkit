@@ -105,33 +105,9 @@ func TestClaudeArguments_ApplyExecutionInput(t *testing.T) {
 }
 
 func TestClaudeArguments_ApplyRuntimeFeatures(t *testing.T) {
-	t.Run("disallows WebSearch when EnableWebSearch is false", func(t *testing.T) {
+	t.Run("does nothing", func(t *testing.T) {
 		args := NewClaudeArguments()
-		features := agent.RuntimeFeatures{
-			EnableWebSearch: utils.ToPointer(false),
-		}
-
-		err := args.ApplyRuntimeFeatures(features)
-		require.NoError(t, err)
-		assert.Contains(t, args.DisallowedTools, "WebSearch")
-	})
-
-	t.Run("does nothing when EnableWebSearch is true", func(t *testing.T) {
-		args := NewClaudeArguments()
-		features := agent.RuntimeFeatures{
-			EnableWebSearch: utils.ToPointer(true),
-		}
-
-		err := args.ApplyRuntimeFeatures(features)
-		require.NoError(t, err)
-		assert.Empty(t, args.DisallowedTools)
-	})
-
-	t.Run("does nothing when EnableWebSearch is nil", func(t *testing.T) {
-		args := NewClaudeArguments()
-		features := agent.RuntimeFeatures{
-			EnableWebSearch: nil,
-		}
+		features := agent.RuntimeFeatures{}
 
 		err := args.ApplyRuntimeFeatures(features)
 		require.NoError(t, err)

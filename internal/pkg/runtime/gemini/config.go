@@ -41,17 +41,7 @@ func applyRuntimeConfigArguments(config agent.RuntimeConfig) error {
 	return nil
 }
 
-func applyRuntimeFeaturesArguments(args *arguments, features agent.RuntimeFeatures) {
-	if features.EnableNetworkAccess != nil {
-		// If network access is FALSE, we enforce --sandbox
-		// Note: --sandbox flag usually enables sandbox, so it restricts access.
-		// If EnableNetworkAccess is false, we want sandbox.
-		// If EnableNetworkAccess is true, we probably don't want sandbox (or want it relaxed).
-		// Assuming "sandbox" flag means "enable strict sandboxing".
-		if !*features.EnableNetworkAccess {
-			args.SetFlag("sandbox")
-		}
-	}
+func applyRuntimeFeaturesArguments(_ *arguments, _ agent.RuntimeFeatures) {
 }
 
 func applyExecutionInputArguments(args *arguments, executionInput agent.ExecutionInput) error {

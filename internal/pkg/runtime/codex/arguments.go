@@ -124,21 +124,8 @@ func (arguments *CodexArguments) ApplyRuntimeConfig(config agent.RuntimeConfig) 
 	return nil
 }
 
-// ApplyRuntimeFeatures applies runtime feature flags to config overrides.
-// Initializes ConfigOverrides map if nil to prevent panics.
-func (arguments *CodexArguments) ApplyRuntimeFeatures(features agent.RuntimeFeatures) error {
-	if arguments.ConfigOverrides == nil {
-		arguments.ConfigOverrides = make(map[string]any)
-	}
-
-	if features.EnableNetworkAccess != nil {
-		arguments.ConfigOverrides["sandbox_workspace_write.network_access"] = *features.EnableNetworkAccess
-	}
-
-	if features.EnableWebSearch != nil {
-		arguments.ConfigOverrides["features.web_search_request"] = *features.EnableWebSearch
-	}
-
+// ApplyRuntimeFeatures currently ignores runtime feature flags.
+func (arguments *CodexArguments) ApplyRuntimeFeatures(_ agent.RuntimeFeatures) error {
 	return nil
 }
 

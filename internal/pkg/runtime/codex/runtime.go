@@ -72,10 +72,7 @@ func (runtime *Runtime) GetDefaultConfig(ctx context.Context) (agent.RuntimeConf
 }
 
 func (runtime *Runtime) GetDefaultFeatures(ctx context.Context) (agent.RuntimeFeatures, error) {
-	return agent.RuntimeFeatures{
-		EnableWebSearch:     nil,
-		EnableNetworkAccess: nil,
-	}, nil
+	return agent.RuntimeFeatures{}, nil
 }
 
 func (runtime *Runtime) GetInfo(ctx context.Context) (agent.RuntimeInfo, error) {

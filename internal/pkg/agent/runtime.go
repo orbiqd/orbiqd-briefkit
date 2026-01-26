@@ -14,12 +14,6 @@ type RuntimeKind string
 type RuntimeConfig any
 
 type RuntimeFeatures struct {
-	// EnableWebSearch allows the agent to use internal web-search tool without accessing the internet.
-	EnableWebSearch *bool `json:"enableWebSearch"`
-
-	// EnableNetworkAccess allows the agent to access external network resources.
-	EnableNetworkAccess *bool `json:"enableNetworkAccess"`
-
 	// EnableSandbox overrides the agent's default sandbox configuration, forcing it to run in (or out of) sandbox mode.
 	EnableSandbox *bool `json:"enableSandbox"`
 }
