@@ -1,0 +1,40 @@
+name: Refactor
+description: Propose refactors or technical debt cleanup
+title: "[Refactor]: "
+labels: ["refactor"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for refactors or technical debt items.
+
+  - type: input
+    id: area
+    attributes:
+      label: Area or module
+      description: Where should the refactor happen?
+      placeholder: e.g. briefkit-ctl command parsing
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: Why is this refactor needed?
+      placeholder: Maintenance pain, performance, readability, testability, etc.
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What is in scope and out of scope?
+      placeholder: |
+        In scope:
+        - ...
+        Out of scope:
+        - ...
+    validations:
+      required: true
