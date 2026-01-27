@@ -28,13 +28,13 @@ Follow these steps to get the project running on your local machine.
 3.  **Build the project:**
     Compile the application binaries with Makefile targets.
     ```bash
-    make build
+    make build-local
     ```
 
 4.  **Run the application:**
     Execute the compiled binary.
     ```bash
-    ./dist/briefkit-ctl_<os>_<arch>/briefkit-ctl
+    ./bin/briefkit-ctl
     ```
 
 ### Running Tests
