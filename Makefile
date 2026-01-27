@@ -1,9 +1,23 @@
-.PHONY: build build-mocks build-briefkit-runner build-briefkit-ctl build-briefkit-mcp build-runner run-briefkit-runner debug-briefkit-mcp test lint
+.PHONY: build build-all build-mocks lint lint-go lint-goreleaser test clean run-briefkit-runner debug-briefkit-mcp
 
-BIN_DIR := bin
+# Dev build (current platform via GoReleaser)
+build: lint
+	goreleaser build --snapshot --clean --single-target
 
-build: lint build-briefkit-runner build-briefkit-ctl build-briefkit-mcp
+# Release build (all platforms)
+build-all: lint
+	goreleaser build --snapshot --clean
 
+# Lint
+lint: lint-go lint-goreleaser
+
+lint-go:
+	golangci-lint run --fix
+
+lint-goreleaser:
+	goreleaser check
+
+# Test
 build-mocks: build-claude-mock build-codex-mock build-gemini-mock
 
 build-claude-mock:
@@ -15,28 +29,19 @@ build-codex-mock:
 build-gemini-mock:
 	go build -o test/runtime/gemini/gemini-mock ./test/runtime/gemini/gemini-mock.go
 
-lint:
-	golangci-lint run --fix
-
 test: build-mocks lint
 	go test -coverprofile=coverage.out ./...
 
-build-briefkit-runner:
-	go build -o $(BIN_DIR)/briefkit-runner ./cmd/briefkit-runner/main.go
-
-build-runner: build-briefkit-runner
-
-build-briefkit-ctl:
-	go build -o $(BIN_DIR)/briefkit-ctl ./cmd/briefkit-ctl/main.go
-
-build-briefkit-mcp:
-	go build -o $(BIN_DIR)/briefkit-mcp ./cmd/briefkit-mcp/main.go
-
-run-briefkit-runner: build-runner
-	$(BIN_DIR)/briefkit-runner --log-level=debug --retry $(filter-out $@,$(MAKECMDGOALS))
+# Run targets
+run-briefkit-runner: build
+	./dist/briefkit-runner_*/briefkit-runner --log-level=debug --retry $(filter-out $@,$(MAKECMDGOALS))
 
 debug-briefkit-mcp: build
-	DANGEROUSLY_OMIT_AUTH=true npx @modelcontextprotocol/inspector ./bin/briefkit-mcp
+	DANGEROUSLY_OMIT_AUTH=true npx @modelcontextprotocol/inspector ./dist/briefkit-mcp_*/briefkit-mcp
+
+# Clean
+clean:
+	rm -rf dist/
 
 %:
 	@:

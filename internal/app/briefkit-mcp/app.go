@@ -4,16 +4,25 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/alecthomas/kong"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/cli"
 
-	//"github.com/mark3labs/mcp-go/mcp"
 	mcpserver "github.com/mark3labs/mcp-go/server"
 )
 
 type Command struct {
-	Log   cli.LogConfig   `embed:"" prefix:"log-"`
-	Store cli.StoreConfig `embed:"" prefix:"store-"`
+	Log     cli.LogConfig   `embed:"" prefix:"log-"`
+	Store   cli.StoreConfig `embed:"" prefix:"store-"`
+	Version VersionFlag     `name:"version" help:"Print version information."`
+}
+
+type VersionFlag bool
+
+func (v VersionFlag) BeforeApply(app *kong.Kong) error {
+	fmt.Println(app.Model.Vars()["version"])
+	app.Exit(0)
+	return nil
 }
 
 func (command *Command) Run(ctx context.Context, agentConfigRepository agent.ConfigRepository, executionRepository agent.ExecutionRepository) error {

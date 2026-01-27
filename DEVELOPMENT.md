@@ -34,7 +34,7 @@ Follow these steps to get the project running on your local machine.
 4.  **Run the application:**
     Execute the compiled binary.
     ```bash
-    ./bin/briefkit-ctl
+    ./dist/briefkit-ctl_<os>_<arch>/briefkit-ctl
     ```
 
 ### Running Tests
@@ -93,4 +93,34 @@ Please adhere to the following rules when contributing.
 -   **Dependency Management**: After adding or removing Go dependencies, always run `go mod tidy`.
 -   **Builds**: After making changes, rebuild the binaries to ensure local runs use the latest code.
 
+## 5. Release Process
 
+BriefKit uses automated releases with [release-please](https://github.com/googleapis/release-please) and [GoReleaser](https://goreleaser.com/).
+
+### How It Works
+
+1. **Conventional Commits** - Use prefixes like `feat:`, `fix:`, `chore:` in commit messages
+2. **Release PR** - release-please automatically creates a Release PR on `main`
+3. **Merge to Release** - Merging the Release PR triggers:
+   - Version bump and CHANGELOG update
+   - Git tag creation (e.g., `v0.1.0`)
+   - GoReleaser builds and uploads binaries
+
+### Commit Message Format
+
+| Prefix | Version Bump | Example |
+|--------|-------------|---------|
+| `feat:` | Minor (0.X.0) | `feat: add new agent type` |
+| `fix:` | Patch (0.0.X) | `fix: correct timeout handling` |
+| `feat!:` or `BREAKING CHANGE:` | Major (X.0.0) | `feat!: redesign config format` |
+| `chore:`, `docs:`, `ci:` | No release | `chore: update dependencies` |
+
+### Manual Release (Emergency)
+
+To trigger a release manually:
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+This will trigger the GoReleaser workflow directly.

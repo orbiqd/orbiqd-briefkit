@@ -9,6 +9,12 @@ import (
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/cli"
 )
 
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+)
+
 func main() {
 	var command briefkit_mcp.Command
 
@@ -16,6 +22,7 @@ func main() {
 		kong.Name("briefkit-mcp"),
 		kong.Description("OrbiqD BriefKit MCP Server - Model Context Protocol stdio server"),
 		kong.UsageOnError(),
+		kong.Vars{"version": version + " (" + commit + ", " + date + ")"},
 	)
 
 	cliCtx := context.Background()
