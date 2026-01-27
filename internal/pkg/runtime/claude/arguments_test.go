@@ -66,6 +66,15 @@ func TestClaudeArguments_ToSlice(t *testing.T) {
 				"--resume=",
 			},
 		},
+		{
+			name: "permission mode set",
+			args: &ClaudeArguments{
+				PermissionMode: utils.ToPointer("bypassPermissions"),
+			},
+			expected: []string{
+				"--permission-mode=bypassPermissions",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -105,37 +114,40 @@ func TestClaudeArguments_ApplyExecutionInput(t *testing.T) {
 }
 
 func TestClaudeArguments_ApplyRuntimeFeatures(t *testing.T) {
-	t.Run("disallows WebSearch when EnableWebSearch is false", func(t *testing.T) {
+	t.Run("EnableSandbox=nil uses runtime default", func(t *testing.T) {
 		args := NewClaudeArguments()
-		features := agent.RuntimeFeatures{
-			EnableWebSearch: utils.ToPointer(false),
-		}
+		features := agent.RuntimeFeatures{}
 
 		err := args.ApplyRuntimeFeatures(features)
 		require.NoError(t, err)
-		assert.Contains(t, args.DisallowedTools, "WebSearch")
+		assert.Nil(t, args.PermissionMode)
+		assert.Nil(t, args.Settings["sandbox"])
 	})
 
-	t.Run("does nothing when EnableWebSearch is true", func(t *testing.T) {
+	t.Run("EnableSandbox=false sets bypassPermissions", func(t *testing.T) {
 		args := NewClaudeArguments()
 		features := agent.RuntimeFeatures{
-			EnableWebSearch: utils.ToPointer(true),
+			EnableSandbox: utils.ToPointer(false),
 		}
 
 		err := args.ApplyRuntimeFeatures(features)
 		require.NoError(t, err)
-		assert.Empty(t, args.DisallowedTools)
+		require.NotNil(t, args.PermissionMode)
+		assert.Equal(t, "bypassPermissions", *args.PermissionMode)
 	})
 
-	t.Run("does nothing when EnableWebSearch is nil", func(t *testing.T) {
+	t.Run("EnableSandbox=true enables sandbox via settings", func(t *testing.T) {
 		args := NewClaudeArguments()
 		features := agent.RuntimeFeatures{
-			EnableWebSearch: nil,
+			EnableSandbox: utils.ToPointer(true),
 		}
 
 		err := args.ApplyRuntimeFeatures(features)
 		require.NoError(t, err)
-		assert.Empty(t, args.DisallowedTools)
+		assert.Nil(t, args.PermissionMode)
+		require.NotNil(t, args.Settings["sandbox"])
+		sandboxSettings := args.Settings["sandbox"].(map[string]any)
+		assert.True(t, sandboxSettings["enabled"].(bool))
 	})
 }
 
