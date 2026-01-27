@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/orbiqd/orbiqd-briefkit/compare/orbiqd-briefkit-v0.3.0...orbiqd-briefkit-v0.3.1) (2026-01-27)
+
+
+### Bug Fixes
+
+* **ci:** match release workflow trigger to release-please tag format ([5f0b124](https://github.com/orbiqd/orbiqd-briefkit/commit/5f0b124c4afeadbfebed1ede75aed1ff3ad5f113))
+
 ## [0.3.0](https://github.com/orbiqd/orbiqd-briefkit/compare/orbiqd-briefkit-v0.2.0...orbiqd-briefkit-v0.3.0) (2026-01-27)
 
 
