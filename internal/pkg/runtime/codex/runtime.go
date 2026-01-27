@@ -131,9 +131,31 @@ func (runtime *Runtime) RegisterMCPServer(ctx context.Context, serverName agent.
 		return err
 	}
 
+	if err := runtime.removeMcpServer(ctx, path, name); err != nil {
+		return err
+	}
+
+	if err := runtime.addMcpServer(ctx, path, name, command, server.STDIO.Arguments); err != nil {
+		return err
+	}
+
+	fs := afero.NewOsFs()
+	doc, configPath, mode, err := runtime.openConfig(ctx, fs)
+	if err != nil {
+		return err
+	}
+
+	if err := runtime.setMcpServerTimeout(ctx, fs, name, codexDefaultToolTimeout, doc, configPath, mode); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (runtime *Runtime) removeMcpServer(ctx context.Context, codexPath string, name string) error {
 	// Remove existing server first (for consistency with Claude runtime)
 	// #nosec G204 - path comes from LookupExecutable with hardcoded name
-	removeOutput, removeErr := exec.CommandContext(ctx, path, "mcp", "remove", name).CombinedOutput()
+	removeOutput, removeErr := exec.CommandContext(ctx, codexPath, "mcp", "remove", name).CombinedOutput()
 	if removeErr != nil {
 		outputStr := strings.ToLower(strings.TrimSpace(string(removeOutput)))
 		if !strings.Contains(outputStr, "no mcp server named") {
@@ -141,13 +163,17 @@ func (runtime *Runtime) RegisterMCPServer(ctx context.Context, serverName agent.
 		}
 	}
 
+	return nil
+}
+
+func (runtime *Runtime) addMcpServer(ctx context.Context, codexPath string, name string, command string, arguments []string) error {
 	// Add the server (note: -- separator required before command)
 	addArgs := []string{"mcp", "add", name, "--"}
 	addArgs = append(addArgs, command)
-	addArgs = append(addArgs, server.STDIO.Arguments...)
+	addArgs = append(addArgs, arguments...)
 
 	// #nosec G204 - path comes from LookupExecutable with hardcoded name
-	addOutput, addErr := exec.CommandContext(ctx, path, addArgs...).CombinedOutput()
+	addOutput, addErr := exec.CommandContext(ctx, codexPath, addArgs...).CombinedOutput()
 	if addErr != nil {
 		trimmedOutput := strings.TrimSpace(string(addOutput))
 		if trimmedOutput == "" {
@@ -156,20 +182,27 @@ func (runtime *Runtime) RegisterMCPServer(ctx context.Context, serverName agent.
 		return fmt.Errorf("codex mcp server registration: %s", trimmedOutput)
 	}
 
-	configPath, err := homedir.Expand(defaultCodexConfigPath)
-	if err != nil {
-		return fmt.Errorf("codex config path expansion: %w", err)
+	return nil
+}
+
+func (runtime *Runtime) openConfig(ctx context.Context, fs afero.Fs) (*toml.Document, string, os.FileMode, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, "", 0, err
 	}
 
-	fs := afero.NewOsFs()
+	configPath, err := homedir.Expand(defaultCodexConfigPath)
+	if err != nil {
+		return nil, "", 0, fmt.Errorf("codex config path expansion: %w", err)
+	}
+
 	configDir := filepath.Dir(configPath)
 	if err := fs.MkdirAll(configDir, 0o755); err != nil {
-		return fmt.Errorf("codex config directory creation: %w", err)
+		return nil, "", 0, fmt.Errorf("codex config directory creation: %w", err)
 	}
 
 	info, err := fs.Stat(configPath)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("codex config stat: %w", err)
+		return nil, "", 0, fmt.Errorf("codex config stat: %w", err)
 	}
 
 	var (
@@ -181,21 +214,29 @@ func (runtime *Runtime) RegisterMCPServer(ctx context.Context, serverName agent.
 		mode = info.Mode()
 		contents, readErr := afero.ReadFile(fs, configPath)
 		if readErr != nil {
-			return fmt.Errorf("codex config read: %w", readErr)
+			return nil, "", 0, fmt.Errorf("codex config read: %w", readErr)
 		}
 
 		doc, err = toml.Parse(contents)
 		if err != nil {
-			return fmt.Errorf("codex config parse: %w", err)
+			return nil, "", 0, fmt.Errorf("codex config parse: %w", err)
 		}
 	} else {
 		doc, err = toml.ParseString("")
 		if err != nil {
-			return fmt.Errorf("codex config parse: %w", err)
+			return nil, "", 0, fmt.Errorf("codex config parse: %w", err)
 		}
 	}
 
-	timeoutSec := int64(codexDefaultToolTimeout.Seconds())
+	return doc, configPath, mode, nil
+}
+
+func (runtime *Runtime) setMcpServerTimeout(ctx context.Context, fs afero.Fs, name string, timeout time.Duration, doc *toml.Document, configPath string, mode os.FileMode) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	timeoutSec := int64(timeout.Seconds())
 	keyPath := fmt.Sprintf("mcp_servers.%s.tool_timeout_sec", name)
 	if err := doc.Set(keyPath, timeoutSec); err != nil {
 		return fmt.Errorf("codex config update: %w", err)
