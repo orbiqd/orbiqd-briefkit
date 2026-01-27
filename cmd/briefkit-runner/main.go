@@ -11,6 +11,12 @@ import (
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/runtime"
 )
 
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+)
+
 func main() {
 	var command briefkit_runner.RunnerCommand
 
@@ -18,6 +24,7 @@ func main() {
 		kong.Name("briefkit-runner"),
 		kong.Description("OrbiqD BriefKit Runner - Execute agent instances"),
 		kong.UsageOnError(),
+		kong.Vars{"version": version + " (" + commit + ", " + date + ")"},
 	)
 
 	logger, err := cli.CreateLoggerFromConfig(command.Log)

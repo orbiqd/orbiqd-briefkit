@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/alecthomas/kong"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/cli"
 )
@@ -17,6 +18,15 @@ type RunnerCommand struct {
 
 	ExecutionID agent.ExecutionID `arg:"" required:"" help:"Execution ID to run."`
 	Retry       bool              `help:"Allow rerunning finished executions."`
+	Version     VersionFlag       `name:"version" help:"Print version information."`
+}
+
+type VersionFlag bool
+
+func (v VersionFlag) BeforeApply(app *kong.Kong) error {
+	fmt.Println(app.Model.Vars()["version"])
+	app.Exit(0)
+	return nil
 }
 
 func (command *RunnerCommand) Run(ctx context.Context, executionRepository agent.ExecutionRepository, runtimeRegistry agent.RuntimeRegistry) error {

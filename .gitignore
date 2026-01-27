@@ -5,5 +5,9 @@
 .gemini/
 .claude/
 
+# Build artifacts
+dist/
+bin/
+
 # Other
 *.out
