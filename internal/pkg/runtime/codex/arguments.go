@@ -18,6 +18,7 @@ type CodexArguments struct {
 	JSON             *bool
 	SkipGitRepoCheck *bool
 	Model            *string
+	SandboxMode      *string
 	ConfigOverrides  map[string]any
 }
 
@@ -45,6 +46,10 @@ func (arguments *CodexArguments) ToSlice() []string {
 
 	if arguments.Model != nil {
 		list = append(list, "--model="+*arguments.Model)
+	}
+
+	if arguments.SandboxMode != nil {
+		list = append(list, "--sandbox="+*arguments.SandboxMode)
 	}
 
 	// RuntimeConfig overrides - sorted for determinism
@@ -124,8 +129,18 @@ func (arguments *CodexArguments) ApplyRuntimeConfig(config agent.RuntimeConfig) 
 	return nil
 }
 
-// ApplyRuntimeFeatures currently ignores runtime feature flags.
-func (arguments *CodexArguments) ApplyRuntimeFeatures(_ agent.RuntimeFeatures) error {
+// ApplyRuntimeFeatures applies runtime feature flags to codex arguments.
+func (arguments *CodexArguments) ApplyRuntimeFeatures(features agent.RuntimeFeatures) error {
+	if features.EnableSandbox == nil {
+		return nil
+	}
+
+	if *features.EnableSandbox {
+		arguments.SandboxMode = utils.ToPointer("workspace-write")
+		return nil
+	}
+
+	arguments.SandboxMode = utils.ToPointer("danger-full-access")
 	return nil
 }
 

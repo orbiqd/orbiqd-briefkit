@@ -17,6 +17,7 @@ func TestNewCodexArguments_WhenCreated_ThenSetsDefaults(t *testing.T) {
 	assert.True(t, *args.JSON)
 	assert.Nil(t, args.SkipGitRepoCheck)
 	assert.Nil(t, args.Model)
+	assert.Nil(t, args.SandboxMode)
 	require.NotNil(t, args.ConfigOverrides)
 	assert.Empty(t, args.ConfigOverrides)
 }
@@ -84,6 +85,14 @@ func TestCodexArguments_ToSlice_WhenConfigOverridesContainUnsupportedTypes_ThenS
 		"--config=b=two",
 		"--config=c=true",
 	}, args.ToSlice())
+}
+
+func TestCodexArguments_ToSlice_WhenSandboxModeSet_ThenAddsSandboxFlag(t *testing.T) {
+	args := &CodexArguments{
+		SandboxMode: utils.ToPointer("workspace-write"),
+	}
+
+	assert.Equal(t, []string{"--sandbox=workspace-write"}, args.ToSlice())
 }
 
 func TestCodexArguments_ApplyRuntimeConfig_WhenNilOrNilPointer_ThenKeepsDefaults(t *testing.T) {
@@ -174,6 +183,34 @@ func TestCodexArguments_ApplyRuntimeFeatures_WhenFeaturesNil_ThenKeepsExistingOv
 	assert.Equal(t, map[string]any{
 		"existing": "value",
 	}, args.ConfigOverrides)
+}
+
+func TestCodexArguments_ApplyRuntimeFeatures_WhenEnableSandboxTrue_ThenSetsSandboxMode(t *testing.T) {
+	args := &CodexArguments{}
+	features := agent.RuntimeFeatures{
+		EnableSandbox: utils.ToPointer(true),
+	}
+
+	err := args.ApplyRuntimeFeatures(features)
+
+	require.NoError(t, err)
+	require.NotNil(t, args.SandboxMode)
+	assert.Equal(t, "workspace-write", *args.SandboxMode)
+}
+
+func TestCodexArguments_ApplyRuntimeFeatures_WhenEnableSandboxFalse_ThenSetsSandboxMode(t *testing.T) {
+	args := &CodexArguments{
+		SandboxMode: utils.ToPointer("workspace-write"),
+	}
+	features := agent.RuntimeFeatures{
+		EnableSandbox: utils.ToPointer(false),
+	}
+
+	err := args.ApplyRuntimeFeatures(features)
+
+	require.NoError(t, err)
+	require.NotNil(t, args.SandboxMode)
+	assert.Equal(t, "danger-full-access", *args.SandboxMode)
 }
 
 func TestCodexArguments_ApplyExecutionInput_WhenModelNil_ThenNoChange(t *testing.T) {
