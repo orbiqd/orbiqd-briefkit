@@ -195,17 +195,14 @@ func (runtime *Runtime) setMcpServerTimeout(ctx context.Context, fs afero.Fs, na
 		return fmt.Errorf("codex config directory creation: %w", err)
 	}
 
-	info, err := fs.Stat(configPath)
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("codex config stat: %w", err)
-	}
-
 	var (
 		doc  *toml.Document
 		mode os.FileMode = 0o600
 	)
 
-	if err == nil {
+	info, err := fs.Stat(configPath)
+	switch {
+	case err == nil:
 		mode = info.Mode()
 		contents, readErr := afero.ReadFile(fs, configPath)
 		if readErr != nil {
@@ -216,11 +213,13 @@ func (runtime *Runtime) setMcpServerTimeout(ctx context.Context, fs afero.Fs, na
 		if err != nil {
 			return fmt.Errorf("codex config parse: %w", err)
 		}
-	} else {
+	case errors.Is(err, os.ErrNotExist):
 		doc, err = toml.ParseString("")
 		if err != nil {
 			return fmt.Errorf("codex config parse: %w", err)
 		}
+	default:
+		return fmt.Errorf("codex config stat: %w", err)
 	}
 
 	timeoutSec := int64(timeout.Seconds())
