@@ -49,7 +49,7 @@ debug-briefkit-mcp: build-local
 
 # Clean
 clean:
-	rm -rf dist/
+	rm -rf bin/ dist/
 
 %:
 	@:
