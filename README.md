@@ -46,6 +46,15 @@ BriefKit consists of three components:
   - [Codex](https://codex.anthropic.com) (`codex` binary)
   - [Gemini](https://ai.google.dev) (`gemini` binary)
 
+### Homebrew (macOS)
+
+```bash
+brew tap orbiqd/briefkit
+brew install briefkit
+```
+
+This installs prebuilt binaries for macOS (arm64 and amd64). No local compilation required.
+
 ### Build from Source
 
 ```bash

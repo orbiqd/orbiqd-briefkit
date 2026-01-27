@@ -81,3 +81,20 @@ release:
     name: orbiqd-briefkit
   draft: false
   prerelease: auto
+
+brews:
+  - name: briefkit
+    repository:
+      owner: orbiqd
+      name: homebrew-briefkit
+      token: "{{ .Env.TAP_GITHUB_TOKEN }}"
+    directory: Formula
+    homepage: "https://github.com/orbiqd/orbiqd-briefkit"
+    description: "Local orchestration tool for subscription-based coding CLIs"
+    license: MIT
+    install: |
+      bin.install "briefkit-ctl"
+      bin.install "briefkit-mcp"
+      bin.install "briefkit-runner"
+    test: |
+      system "#{bin}/briefkit-ctl", "--version"
