@@ -4,18 +4,26 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
+	"github.com/mitchellh/go-homedir"
+	"github.com/neongreen/mono/lib/toml"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/cli"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
+	"github.com/spf13/afero"
 )
 
 var semverPattern = regexp.MustCompile(`\d+\.\d+\.\d+`)
 
 const Codex = agent.RuntimeKind("codex")
+const defaultCodexConfigPath = "~/.codex/config.toml"
+const codexDefaultToolTimeout = 10 * time.Minute
 
 // RuntimeConfig defines runtime options for Codex execution.
 type RuntimeConfig struct {
@@ -146,6 +154,55 @@ func (runtime *Runtime) RegisterMCPServer(ctx context.Context, serverName agent.
 			return fmt.Errorf("codex mcp server registration: %w", addErr)
 		}
 		return fmt.Errorf("codex mcp server registration: %s", trimmedOutput)
+	}
+
+	configPath, err := homedir.Expand(defaultCodexConfigPath)
+	if err != nil {
+		return fmt.Errorf("codex config path expansion: %w", err)
+	}
+
+	fs := afero.NewOsFs()
+	configDir := filepath.Dir(configPath)
+	if err := fs.MkdirAll(configDir, 0o755); err != nil {
+		return fmt.Errorf("codex config directory creation: %w", err)
+	}
+
+	info, err := fs.Stat(configPath)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("codex config stat: %w", err)
+	}
+
+	var (
+		doc  *toml.Document
+		mode os.FileMode = 0o600
+	)
+
+	if err == nil {
+		mode = info.Mode()
+		contents, readErr := afero.ReadFile(fs, configPath)
+		if readErr != nil {
+			return fmt.Errorf("codex config read: %w", readErr)
+		}
+
+		doc, err = toml.Parse(contents)
+		if err != nil {
+			return fmt.Errorf("codex config parse: %w", err)
+		}
+	} else {
+		doc, err = toml.ParseString("")
+		if err != nil {
+			return fmt.Errorf("codex config parse: %w", err)
+		}
+	}
+
+	timeoutSec := int64(codexDefaultToolTimeout.Seconds())
+	keyPath := fmt.Sprintf("mcp_servers.%s.tool_timeout_sec", name)
+	if err := doc.Set(keyPath, timeoutSec); err != nil {
+		return fmt.Errorf("codex config update: %w", err)
+	}
+
+	if err := afero.WriteFile(fs, configPath, []byte(doc.String()), mode); err != nil {
+		return fmt.Errorf("codex config write: %w", err)
 	}
 
 	return nil
