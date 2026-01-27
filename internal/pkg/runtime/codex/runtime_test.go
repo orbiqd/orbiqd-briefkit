@@ -43,6 +43,8 @@ func TestSetMcpServerTimeout_WhenConfigMissing_ThenCreatesFileWithTimeout(t *tes
 	runtime := &Runtime{}
 	configPath := filepath.Join("config", "config.toml")
 
+	require.NoError(t, fs.MkdirAll(filepath.Dir(configPath), 0o755))
+
 	err := runtime.setMcpServerTimeout(context.Background(), fs, "briefkit", configPath)
 
 	require.NoError(t, err)
@@ -55,6 +57,7 @@ func TestSetMcpServerTimeout_WhenConfigExists_ThenPreservesOtherKeys(t *testing.
 	configPath := filepath.Join("config", "config.toml")
 	existing := "foo = \"bar\"\n\n[mcp_servers.briefkit]\ncommand = \"bin/briefkit-mcp\"\n"
 
+	require.NoError(t, fs.MkdirAll(filepath.Dir(configPath), 0o755))
 	require.NoError(t, afero.WriteFile(fs, configPath, []byte(existing), 0o644))
 
 	err := runtime.setMcpServerTimeout(context.Background(), fs, "briefkit", configPath)
@@ -75,6 +78,7 @@ func TestSetMcpServerTimeout_WhenTimeoutExists_ThenOverwritesValue(t *testing.T)
 	configPath := filepath.Join("config", "config.toml")
 	existing := "[mcp_servers.briefkit]\ntool_timeout_sec = 5\n"
 
+	require.NoError(t, fs.MkdirAll(filepath.Dir(configPath), 0o755))
 	require.NoError(t, afero.WriteFile(fs, configPath, []byte(existing), 0o644))
 
 	err := runtime.setMcpServerTimeout(context.Background(), fs, "briefkit", configPath)
@@ -89,6 +93,7 @@ func TestSetMcpServerTimeout_WhenConfigExists_ThenPreservesFileMode(t *testing.T
 	configPath := filepath.Join("config", "config.toml")
 	existing := "[mcp_servers]\n"
 
+	require.NoError(t, fs.MkdirAll(filepath.Dir(configPath), 0o755))
 	require.NoError(t, afero.WriteFile(fs, configPath, []byte(existing), 0o640))
 
 	err := runtime.setMcpServerTimeout(context.Background(), fs, "briefkit", configPath)
@@ -158,6 +163,8 @@ func TestSetMcpServerTimeout_WhenServerNameHasDot_ThenUsesQuotedKey(t *testing.T
 	fs := afero.NewMemMapFs()
 	runtime := &Runtime{}
 	configPath := filepath.Join("config", "config.toml")
+
+	require.NoError(t, fs.MkdirAll(filepath.Dir(configPath), 0o755))
 
 	err := runtime.setMcpServerTimeout(context.Background(), fs, "brief.kit", configPath)
 

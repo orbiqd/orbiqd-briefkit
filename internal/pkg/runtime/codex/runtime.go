@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -189,11 +188,6 @@ func (runtime *Runtime) addMcpServer(ctx context.Context, codexPath string, name
 func (runtime *Runtime) setMcpServerTimeout(ctx context.Context, fs afero.Fs, name string, configPath string) error {
 	if err := ctx.Err(); err != nil {
 		return err
-	}
-
-	configDir := filepath.Dir(configPath)
-	if err := fs.MkdirAll(configDir, 0o755); err != nil {
-		return fmt.Errorf("codex config directory creation: %w", err)
 	}
 
 	var (
