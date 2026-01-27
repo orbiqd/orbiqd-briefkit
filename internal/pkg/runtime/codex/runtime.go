@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -145,7 +146,7 @@ func (runtime *Runtime) RegisterMCPServer(ctx context.Context, serverName agent.
 		return fmt.Errorf("codex config path expansion: %w", err)
 	}
 
-	if err := runtime.setMcpServerTimeout(ctx, fs, name, codexDefaultToolTimeout, configPath); err != nil {
+	if err := runtime.setMcpServerTimeout(ctx, fs, name, configPath); err != nil {
 		return err
 	}
 
@@ -185,7 +186,7 @@ func (runtime *Runtime) addMcpServer(ctx context.Context, codexPath string, name
 	return nil
 }
 
-func (runtime *Runtime) setMcpServerTimeout(ctx context.Context, fs afero.Fs, name string, timeout time.Duration, configPath string) error {
+func (runtime *Runtime) setMcpServerTimeout(ctx context.Context, fs afero.Fs, name string, configPath string) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -222,8 +223,8 @@ func (runtime *Runtime) setMcpServerTimeout(ctx context.Context, fs afero.Fs, na
 		return fmt.Errorf("codex config stat: %w", err)
 	}
 
-	timeoutSec := int64(timeout.Seconds())
-	keyPath := fmt.Sprintf("mcp_servers.%s.tool_timeout_sec", name)
+	timeoutSec := int64(codexDefaultToolTimeout.Seconds())
+	keyPath := fmt.Sprintf("mcp_servers.%s.tool_timeout_sec", strconv.Quote(name))
 	if err := doc.Set(keyPath, timeoutSec); err != nil {
 		return fmt.Errorf("codex config update: %w", err)
 	}
