@@ -1,0 +1,10 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "release-type": "go",
+  "packages": {
+    ".": {
+      "package-name": "orbiqd-briefkit",
+      "changelog-path": "CHANGELOG.md"
+    }
+  }
+}
