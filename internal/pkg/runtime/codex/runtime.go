@@ -4,18 +4,26 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 
+	"github.com/mitchellh/go-homedir"
+	"github.com/neongreen/mono/lib/toml"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/cli"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
+	"github.com/spf13/afero"
 )
 
 var semverPattern = regexp.MustCompile(`\d+\.\d+\.\d+`)
 
 const Codex = agent.RuntimeKind("codex")
+const defaultCodexConfigPath = "~/.codex/config.toml"
+const codexDefaultToolTimeout = 10 * time.Minute
 
 // RuntimeConfig defines runtime options for Codex execution.
 type RuntimeConfig struct {
@@ -123,9 +131,31 @@ func (runtime *Runtime) RegisterMCPServer(ctx context.Context, serverName agent.
 		return err
 	}
 
+	if err := runtime.removeMcpServer(ctx, path, name); err != nil {
+		return err
+	}
+
+	if err := runtime.addMcpServer(ctx, path, name, command, server.STDIO.Arguments); err != nil {
+		return err
+	}
+
+	fs := afero.NewOsFs()
+	configPath, err := homedir.Expand(defaultCodexConfigPath)
+	if err != nil {
+		return fmt.Errorf("codex config path expansion: %w", err)
+	}
+
+	if err := runtime.setMcpServerTimeout(ctx, fs, name, configPath); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (runtime *Runtime) removeMcpServer(ctx context.Context, codexPath string, name string) error {
 	// Remove existing server first (for consistency with Claude runtime)
 	// #nosec G204 - path comes from LookupExecutable with hardcoded name
-	removeOutput, removeErr := exec.CommandContext(ctx, path, "mcp", "remove", name).CombinedOutput()
+	removeOutput, removeErr := exec.CommandContext(ctx, codexPath, "mcp", "remove", name).CombinedOutput()
 	if removeErr != nil {
 		outputStr := strings.ToLower(strings.TrimSpace(string(removeOutput)))
 		if !strings.Contains(outputStr, "no mcp server named") {
@@ -133,19 +163,68 @@ func (runtime *Runtime) RegisterMCPServer(ctx context.Context, serverName agent.
 		}
 	}
 
+	return nil
+}
+
+func (runtime *Runtime) addMcpServer(ctx context.Context, codexPath string, name string, command string, arguments []string) error {
 	// Add the server (note: -- separator required before command)
 	addArgs := []string{"mcp", "add", name, "--"}
 	addArgs = append(addArgs, command)
-	addArgs = append(addArgs, server.STDIO.Arguments...)
+	addArgs = append(addArgs, arguments...)
 
 	// #nosec G204 - path comes from LookupExecutable with hardcoded name
-	addOutput, addErr := exec.CommandContext(ctx, path, addArgs...).CombinedOutput()
+	addOutput, addErr := exec.CommandContext(ctx, codexPath, addArgs...).CombinedOutput()
 	if addErr != nil {
 		trimmedOutput := strings.TrimSpace(string(addOutput))
 		if trimmedOutput == "" {
 			return fmt.Errorf("codex mcp server registration: %w", addErr)
 		}
 		return fmt.Errorf("codex mcp server registration: %s", trimmedOutput)
+	}
+
+	return nil
+}
+
+func (runtime *Runtime) setMcpServerTimeout(ctx context.Context, fs afero.Fs, name string, configPath string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	var (
+		doc  *toml.Document
+		mode os.FileMode = 0o600
+	)
+
+	info, err := fs.Stat(configPath)
+	switch {
+	case err == nil:
+		mode = info.Mode()
+		contents, readErr := afero.ReadFile(fs, configPath)
+		if readErr != nil {
+			return fmt.Errorf("codex config read: %w", readErr)
+		}
+
+		doc, err = toml.Parse(contents)
+		if err != nil {
+			return fmt.Errorf("codex config parse: %w", err)
+		}
+	case errors.Is(err, os.ErrNotExist):
+		doc, err = toml.ParseString("")
+		if err != nil {
+			return fmt.Errorf("codex config parse: %w", err)
+		}
+	default:
+		return fmt.Errorf("codex config stat: %w", err)
+	}
+
+	timeoutSec := int64(codexDefaultToolTimeout.Seconds())
+	keyPath := fmt.Sprintf("mcp_servers.%s.tool_timeout_sec", strconv.Quote(name))
+	if err := doc.Set(keyPath, timeoutSec); err != nil {
+		return fmt.Errorf("codex config update: %w", err)
+	}
+
+	if err := afero.WriteFile(fs, configPath, []byte(doc.String()), mode); err != nil {
+		return fmt.Errorf("codex config write: %w", err)
 	}
 
 	return nil
