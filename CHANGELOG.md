@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.3.1](https://github.com/orbiqd/orbiqd-briefkit/compare/v0.3.0...v0.3.1) (2026-01-27)
+
+
+### Bug Fixes
+
+* **ci:** match release workflow trigger to release-please tag format ([5f0b124](https://github.com/orbiqd/orbiqd-briefkit/commit/5f0b124c4afeadbfebed1ede75aed1ff3ad5f113))
+* **ci:** use simple version tags without component prefix ([7ea1a66](https://github.com/orbiqd/orbiqd-briefkit/commit/7ea1a66f1cb7e403bb6fee1e2a1c15aa5051c506))
+* **codex:** prevent MCP tool timeouts at 60s ([#21](https://github.com/orbiqd/orbiqd-briefkit/issues/21)) ([09b04d7](https://github.com/orbiqd/orbiqd-briefkit/commit/09b04d7cd68de96bff5d56f7218d2a41ec3299af))
+
 ## [0.3.0](https://github.com/orbiqd/orbiqd-briefkit/compare/orbiqd-briefkit-v0.2.0...orbiqd-briefkit-v0.3.0) (2026-01-27)
 
 
