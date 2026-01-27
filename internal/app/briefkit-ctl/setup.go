@@ -7,9 +7,12 @@ import (
 	"log/slog"
 	"maps"
 	"slices"
+	"time"
 
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/cli"
+	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/runtime/codex"
+	"github.com/spf13/afero"
 )
 
 type SetupCmd struct {
@@ -188,6 +191,13 @@ func (command *SetupCmd) setupRuntimeAgentMCP(ctx context.Context, runtimeKind a
 	err = registrar.RegisterMCPServer(ctx, mcpServerName, mcpServer)
 	if err != nil {
 		return fmt.Errorf("register %s mcp server to %s: %w", mcpServerName, runtimeKind, err)
+	}
+
+	if runtimeKind == codex.Codex {
+		if err := codex.EnsureMCPToolTimeout(ctx, afero.NewOsFs(), mcpServerName, 10*time.Minute); err != nil {
+			return fmt.Errorf("codex mcp tool timeout setup: %w", err)
+		}
+		logger.Info("Codex MCP tool timeout set to 10 minutes.", slog.String("mcpServerName", string(mcpServerName)))
 	}
 
 	return nil
