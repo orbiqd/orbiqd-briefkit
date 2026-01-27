@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - 'orbiqd-briefkit-v*'
+      - 'v*'
 
 permissions:
   contents: write
