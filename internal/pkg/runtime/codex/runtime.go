@@ -140,12 +140,12 @@ func (runtime *Runtime) RegisterMCPServer(ctx context.Context, serverName agent.
 	}
 
 	fs := afero.NewOsFs()
-	doc, configPath, mode, err := runtime.openConfig(ctx, fs)
+	configPath, err := homedir.Expand(defaultCodexConfigPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("codex config path expansion: %w", err)
 	}
 
-	if err := runtime.setMcpServerTimeout(ctx, fs, name, codexDefaultToolTimeout, doc, configPath, mode); err != nil {
+	if err := runtime.setMcpServerTimeout(ctx, fs, name, codexDefaultToolTimeout, configPath); err != nil {
 		return err
 	}
 
@@ -185,24 +185,19 @@ func (runtime *Runtime) addMcpServer(ctx context.Context, codexPath string, name
 	return nil
 }
 
-func (runtime *Runtime) openConfig(ctx context.Context, fs afero.Fs) (*toml.Document, string, os.FileMode, error) {
+func (runtime *Runtime) setMcpServerTimeout(ctx context.Context, fs afero.Fs, name string, timeout time.Duration, configPath string) error {
 	if err := ctx.Err(); err != nil {
-		return nil, "", 0, err
-	}
-
-	configPath, err := homedir.Expand(defaultCodexConfigPath)
-	if err != nil {
-		return nil, "", 0, fmt.Errorf("codex config path expansion: %w", err)
+		return err
 	}
 
 	configDir := filepath.Dir(configPath)
 	if err := fs.MkdirAll(configDir, 0o755); err != nil {
-		return nil, "", 0, fmt.Errorf("codex config directory creation: %w", err)
+		return fmt.Errorf("codex config directory creation: %w", err)
 	}
 
 	info, err := fs.Stat(configPath)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return nil, "", 0, fmt.Errorf("codex config stat: %w", err)
+		return fmt.Errorf("codex config stat: %w", err)
 	}
 
 	var (
@@ -214,26 +209,18 @@ func (runtime *Runtime) openConfig(ctx context.Context, fs afero.Fs) (*toml.Docu
 		mode = info.Mode()
 		contents, readErr := afero.ReadFile(fs, configPath)
 		if readErr != nil {
-			return nil, "", 0, fmt.Errorf("codex config read: %w", readErr)
+			return fmt.Errorf("codex config read: %w", readErr)
 		}
 
 		doc, err = toml.Parse(contents)
 		if err != nil {
-			return nil, "", 0, fmt.Errorf("codex config parse: %w", err)
+			return fmt.Errorf("codex config parse: %w", err)
 		}
 	} else {
 		doc, err = toml.ParseString("")
 		if err != nil {
-			return nil, "", 0, fmt.Errorf("codex config parse: %w", err)
+			return fmt.Errorf("codex config parse: %w", err)
 		}
-	}
-
-	return doc, configPath, mode, nil
-}
-
-func (runtime *Runtime) setMcpServerTimeout(ctx context.Context, fs afero.Fs, name string, timeout time.Duration, doc *toml.Document, configPath string, mode os.FileMode) error {
-	if err := ctx.Err(); err != nil {
-		return err
 	}
 
 	timeoutSec := int64(timeout.Seconds())
