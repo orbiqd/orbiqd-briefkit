@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/orbiqd/orbiqd-briefkit/compare/orbiqd-briefkit-v0.2.0...orbiqd-briefkit-v0.3.0) (2026-01-27)
+
+
+### Features
+
+* add Homebrew tap with GitHub App authentication ([#17](https://github.com/orbiqd/orbiqd-briefkit/issues/17)) ([7b939c9](https://github.com/orbiqd/orbiqd-briefkit/commit/7b939c9cd7689cc32ceef89473011992f018fb76)), closes [#5](https://github.com/orbiqd/orbiqd-briefkit/issues/5)
+
 ## [0.2.0](https://github.com/orbiqd/orbiqd-briefkit/compare/orbiqd-briefkit-v0.1.0...orbiqd-briefkit-v0.2.0) (2026-01-27)
 
 
