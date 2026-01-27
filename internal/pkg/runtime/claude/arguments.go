@@ -17,6 +17,7 @@ type ClaudeArguments struct {
 	Model           *string
 	ResumeSessionID *string
 	DisallowedTools []string
+	PermissionMode  *string
 	Settings        map[string]any
 }
 
@@ -54,6 +55,10 @@ func (arguments *ClaudeArguments) ToSlice() []string {
 
 	if len(arguments.DisallowedTools) > 0 {
 		list = append(list, "--disallowed-tools="+strings.Join(arguments.DisallowedTools, ","))
+	}
+
+	if arguments.PermissionMode != nil {
+		list = append(list, "--permission-mode="+*arguments.PermissionMode)
 	}
 
 	if len(arguments.Settings) > 0 {
@@ -95,8 +100,17 @@ func (arguments *ClaudeArguments) ApplyRuntimeConfig(config agent.RuntimeConfig)
 }
 
 func (arguments *ClaudeArguments) ApplyRuntimeFeatures(features agent.RuntimeFeatures) error {
-	if features.EnableWebSearch != nil && !*features.EnableWebSearch {
-		arguments.DisallowedTools = append(arguments.DisallowedTools, "WebSearch")
+	if features.EnableSandbox == nil {
+		return nil
+	}
+
+	if *features.EnableSandbox {
+		if arguments.Settings == nil {
+			arguments.Settings = make(map[string]any)
+		}
+		arguments.Settings["sandbox"] = map[string]any{"enabled": true}
+	} else {
+		arguments.PermissionMode = utils.ToPointer("bypassPermissions")
 	}
 
 	return nil
