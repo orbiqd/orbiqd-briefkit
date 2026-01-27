@@ -41,7 +41,12 @@ func applyRuntimeConfigArguments(config agent.RuntimeConfig) error {
 	return nil
 }
 
-func applyRuntimeFeaturesArguments(_ *arguments, _ agent.RuntimeFeatures) {
+func applyRuntimeFeaturesArguments(args *arguments, features agent.RuntimeFeatures) {
+	if features.EnableSandbox == nil {
+		return
+	}
+
+	_ = args.SetValue("sandbox", *features.EnableSandbox)
 }
 
 func applyExecutionInputArguments(args *arguments, executionInput agent.ExecutionInput) error {
