@@ -1,12 +1,20 @@
-.PHONY: build build-all build-mocks lint lint-go lint-goreleaser test clean run-briefkit-runner debug-briefkit-mcp
+.PHONY: build build-local build-release build-all build-mocks lint lint-go lint-goreleaser test clean run-briefkit-runner debug-briefkit-mcp
 
-# Dev build (current platform via GoReleaser)
-build: lint
-	goreleaser build --snapshot --clean --single-target
+# Local build (current platform via go build)
+build: build-local
 
-# Release build (all platforms)
-build-all: lint
+build-local: lint-go
+	mkdir -p bin
+	go build -o bin/briefkit-ctl ./cmd/briefkit-ctl
+	go build -o bin/briefkit-mcp ./cmd/briefkit-mcp
+	go build -o bin/briefkit-runner ./cmd/briefkit-runner
+
+# Release build (all platforms via GoReleaser)
+build-release: lint
 	goreleaser build --snapshot --clean
+
+# Backwards-compatible alias
+build-all: build-release
 
 # Lint
 lint: lint-go lint-goreleaser
@@ -33,15 +41,15 @@ test: build-mocks lint
 	go test -coverprofile=coverage.out ./...
 
 # Run targets
-run-briefkit-runner: build
-	./dist/briefkit-runner_*/briefkit-runner --log-level=debug --retry $(filter-out $@,$(MAKECMDGOALS))
+run-briefkit-runner: build-local
+	./bin/briefkit-runner --log-level=debug --retry $(filter-out $@,$(MAKECMDGOALS))
 
-debug-briefkit-mcp: build
-	DANGEROUSLY_OMIT_AUTH=true npx @modelcontextprotocol/inspector ./dist/briefkit-mcp_*/briefkit-mcp
+debug-briefkit-mcp: build-local
+	DANGEROUSLY_OMIT_AUTH=true npx @modelcontextprotocol/inspector ./bin/briefkit-mcp
 
 # Clean
 clean:
-	rm -rf dist/
+	rm -rf bin/ dist/
 
 %:
 	@:

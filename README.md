@@ -51,21 +51,29 @@ BriefKit consists of three components:
 ```bash
 git clone https://github.com/orbiqd/orbiqd-briefkit
 cd orbiqd-briefkit
-make build
+make build-local
 ```
 
-Binaries will be available in `./dist/` under OS/arch-specific folders:
-- `./dist/briefkit-ctl_<os>_<arch>/briefkit-ctl`
-- `./dist/briefkit-mcp_<os>_<arch>/briefkit-mcp`
-- `./dist/briefkit-runner_<os>_<arch>/briefkit-runner`
+Local binaries will be available in `./bin/`:
+- `./bin/briefkit-ctl`
+- `./bin/briefkit-mcp`
+- `./bin/briefkit-runner`
+
+To build release artifacts for all platforms, use:
+
+```bash
+make build-release
+```
+
+Release binaries will be available in `./dist/` under OS/arch-specific folders.
 
 ### Add to PATH (Optional)
 
 ```bash
 mkdir -p ~/.local/bin
-ln -sf /path/to/orbiqd-briefkit/dist/briefkit-ctl_<os>_<arch>/briefkit-ctl ~/.local/bin/briefkit-ctl
-ln -sf /path/to/orbiqd-briefkit/dist/briefkit-mcp_<os>_<arch>/briefkit-mcp ~/.local/bin/briefkit-mcp
-ln -sf /path/to/orbiqd-briefkit/dist/briefkit-runner_<os>_<arch>/briefkit-runner ~/.local/bin/briefkit-runner
+ln -sf /path/to/orbiqd-briefkit/bin/briefkit-ctl ~/.local/bin/briefkit-ctl
+ln -sf /path/to/orbiqd-briefkit/bin/briefkit-mcp ~/.local/bin/briefkit-mcp
+ln -sf /path/to/orbiqd-briefkit/bin/briefkit-runner ~/.local/bin/briefkit-runner
 export PATH="$PATH:$HOME/.local/bin"
 ```
 
@@ -343,10 +351,12 @@ BriefKit exposes all configured agents as MCP tools, enabling integration with C
 ### Starting the MCP Server
 
 ```bash
-./dist/briefkit-mcp_<os>_<arch>/briefkit-mcp
+./bin/briefkit-mcp
 ```
 
 The server will run continuously and communicate via standard input/output using the MCP protocol.
+
+If you built release artifacts, use the binary under `./dist/briefkit-mcp_<os>_<arch>/briefkit-mcp`.
 
 ### Claude Desktop Setup
 
@@ -669,7 +679,7 @@ See [GitHub Issues](https://github.com/orbiqd/orbiqd-briefkit/issues) for detail
 git clone https://github.com/orbiqd/orbiqd-briefkit
 cd orbiqd-briefkit
 go mod tidy
-make build
+make build-local
 go test ./...
 ```
 

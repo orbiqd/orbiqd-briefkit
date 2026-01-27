@@ -6,6 +6,7 @@
 .claude/
 
 # Build artifacts
+bin/
 dist/
 
 # Other
