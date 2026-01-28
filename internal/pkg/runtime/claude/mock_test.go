@@ -1,35 +1,74 @@
-package main
+package claude
 
 import (
 	"bufio"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"os"
 	"strconv"
 	"strings"
 	"syscall"
+	"testing"
 	"time"
 
 	"github.com/alecthomas/kong"
 )
 
-// CLI structure for Kong parser.
-var CLI struct {
-	MCP  MCPCmd  `cmd:"" help:"MCP server management."`
-	Exec ExecCmd `cmd:"" default:"withargs" help:"Execute prompt (default)."`
+const claudeMockEnvKey = "BRIEFKIT_CLAUDE_MOCK"
 
-	Version VersionFlag `name:"version" help:"Print version information."`
+func init() {
+	if os.Getenv(claudeMockEnvKey) != "1" {
+		return
+	}
+
+	flag.Bool("version", false, "")
+	flag.Bool("print", false, "")
+	flag.Bool("verbose", false, "")
+	flag.String("output-format", "", "")
+	flag.String("model", "", "")
+	flag.String("resume", "", "")
+	flag.String("settings", "", "")
+	flag.String("permission-mode", "", "")
+	flag.String("disallowed-tools", "", "")
+	flag.String("scope", "", "")
 }
 
-// VersionFlag handles --version flag using BeforeApply hook.
-type VersionFlag bool
+func TestMain(m *testing.M) {
+	if os.Getenv(claudeMockEnvKey) == "1" {
+		os.Exit(runClaudeMock())
+	}
 
-// BeforeApply is called by Kong before applying the flag value.
-//
-//nolint:unparam // Kong requires BeforeApply() error signature
-func (v VersionFlag) BeforeApply(app *kong.Kong) error {
-	config := loadMockConfig()
+	os.Exit(m.Run())
+}
+
+func runClaudeMock() int {
+	ctx := kong.Parse(&claudeMockCLI,
+		kong.Name("claude"),
+		kong.Description("Mock Claude CLI for testing."),
+		kong.NoDefaultHelp(),
+	)
+
+	if err := ctx.Run(); err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+		return 1
+	}
+
+	return 0
+}
+
+var claudeMockCLI struct {
+	MCP  claudeMockMCPCmd  `cmd:"" help:"MCP server management."`
+	Exec claudeMockExecCmd `cmd:"" default:"withargs" help:"Execute prompt (default)."`
+
+	Version claudeMockVersionFlag `name:"version" help:"Print version information."`
+}
+
+type claudeMockVersionFlag bool
+
+func (v claudeMockVersionFlag) BeforeApply(app *kong.Kong) error {
+	config := loadClaudeMockConfig()
 
 	if config.VersionFail {
 		_, _ = fmt.Fprintln(os.Stderr, "version check failed")
@@ -46,8 +85,7 @@ func (v VersionFlag) BeforeApply(app *kong.Kong) error {
 	return nil
 }
 
-// ExecCmd is the default command that handles prompt execution.
-type ExecCmd struct {
+type claudeMockExecCmd struct {
 	Print           bool   `help:"Print output." default:"true"`
 	Verbose         bool   `help:"Verbose output." default:"true"`
 	OutputFormat    string `name:"output-format" help:"Output format." default:"stream-json"`
@@ -58,28 +96,24 @@ type ExecCmd struct {
 	DisallowedTools string `name:"disallowed-tools" help:"Disallowed tools."`
 }
 
-// MCPCmd handles mcp subcommand.
-type MCPCmd struct {
-	Add    MCPAddCmd    `cmd:"" help:"Add MCP server."`
-	Remove MCPRemoveCmd `cmd:"" help:"Remove MCP server."`
+type claudeMockMCPCmd struct {
+	Add    claudeMockMCPAddCmd    `cmd:"" help:"Add MCP server."`
+	Remove claudeMockMCPRemoveCmd `cmd:"" help:"Remove MCP server."`
 }
 
-// MCPAddCmd handles mcp add subcommand.
-type MCPAddCmd struct {
+type claudeMockMCPAddCmd struct {
 	Scope string   `name:"scope" help:"Scope for the server." default:"user"`
 	Name  string   `arg:"" help:"Server name."`
 	Cmd   string   `arg:"" help:"Command to run."`
 	Args  []string `arg:"" optional:"" help:"Command arguments."`
 }
 
-// MCPRemoveCmd handles mcp remove subcommand.
-type MCPRemoveCmd struct {
+type claudeMockMCPRemoveCmd struct {
 	Scope string `name:"scope" help:"Scope for the server." default:"user"`
 	Name  string `arg:"" help:"Server name."`
 }
 
-// MockConfig holds all configuration from environment variables.
-type MockConfig struct {
+type claudeMockConfig struct {
 	Fail           bool
 	ExitCode       int
 	Stderr         string
@@ -100,8 +134,7 @@ type MockConfig struct {
 	MCPAddNoOutput bool
 }
 
-// loadMockConfig reads all MOCK_CLAUDE_* environment variables.
-func loadMockConfig() MockConfig {
+func loadClaudeMockConfig() claudeMockConfig {
 	exitCode := 1
 	if code := os.Getenv("MOCK_CLAUDE_EXIT_CODE"); code != "" {
 		if parsed, err := strconv.Atoi(code); err == nil {
@@ -109,7 +142,7 @@ func loadMockConfig() MockConfig {
 		}
 	}
 
-	return MockConfig{
+	return claudeMockConfig{
 		Fail:           envBool("MOCK_CLAUDE_FAIL"),
 		ExitCode:       exitCode,
 		Stderr:         os.Getenv("MOCK_CLAUDE_STDERR"),
@@ -136,82 +169,77 @@ func envBool(key string) bool {
 	return val == "1" || val == "true" || val == "yes"
 }
 
-// JSON event structures matching instance.go expectations.
-type content struct {
+type claudeMockContent struct {
 	Type string `json:"type"`
 	Text string `json:"text,omitempty"`
 }
 
-type message struct {
-	Content []content `json:"content"`
+type claudeMockMessage struct {
+	Content []claudeMockContent `json:"content"`
 }
 
-type event struct {
-	Type      string   `json:"type"`
-	Subtype   string   `json:"subtype,omitempty"`
-	SessionID string   `json:"session_id,omitempty"`
-	Message   *message `json:"message,omitempty"`
-	Result    string   `json:"result,omitempty"`
+type claudeMockEvent struct {
+	Type      string             `json:"type"`
+	Subtype   string             `json:"subtype,omitempty"`
+	SessionID string             `json:"session_id,omitempty"`
+	Message   *claudeMockMessage `json:"message,omitempty"`
+	Result    string             `json:"result,omitempty"`
 }
 
-// Output step functions for composable JSON stream generation.
-func writeInit(w io.Writer, sessionID string) error {
-	return json.NewEncoder(w).Encode(event{
+func writeMockInit(w io.Writer, sessionID string) error {
+	return json.NewEncoder(w).Encode(claudeMockEvent{
 		Type:      "system",
 		Subtype:   "init",
 		SessionID: sessionID,
 	})
 }
 
-func writeAssistant(w io.Writer, text string) error {
-	return json.NewEncoder(w).Encode(event{
+func writeMockAssistant(w io.Writer, text string) error {
+	return json.NewEncoder(w).Encode(claudeMockEvent{
 		Type: "assistant",
-		Message: &message{
-			Content: []content{
+		Message: &claudeMockMessage{
+			Content: []claudeMockContent{
 				{Type: "text", Text: text},
 			},
 		},
 	})
 }
 
-func writeResultSuccess(w io.Writer, result string) error {
-	return json.NewEncoder(w).Encode(event{
+func writeMockResultSuccess(w io.Writer, result string) error {
+	return json.NewEncoder(w).Encode(claudeMockEvent{
 		Type:    "result",
 		Subtype: "success",
 		Result:  result,
 	})
 }
 
-func writeResultError(w io.Writer, errMsg string) error {
-	return json.NewEncoder(w).Encode(event{
+func writeMockResultError(w io.Writer, errMsg string) error {
+	return json.NewEncoder(w).Encode(claudeMockEvent{
 		Type:    "result",
 		Subtype: "error",
 		Result:  errMsg,
 	})
 }
 
-func writeMalformedJSON(w io.Writer) error {
+func writeMockMalformedJSON(w io.Writer) error {
 	_, err := fmt.Fprintln(w, `{"type":"system","subtype":"init","session_id":`)
 	return err
 }
 
-func writeEmptyLine(w io.Writer) error {
+func writeMockEmptyLine(w io.Writer) error {
 	_, err := fmt.Fprintln(w)
 	return err
 }
 
-func writeNonJSONLine(w io.Writer, text string) error {
+func writeMockNonJSONLine(w io.Writer, text string) error {
 	_, err := fmt.Fprintln(w, text)
 	return err
 }
 
-// Run handles prompt execution (default command).
-//
-//nolint:unparam // Kong requires Run() error signature
-func (cmd *ExecCmd) Run() error {
-	config := loadMockConfig()
+func (cmd *claudeMockExecCmd) Run() error {
+	config := loadClaudeMockConfig()
 
-	prompt := readStdin()
+	prompt := readMockStdin()
 	if prompt == "" {
 		prompt = "MOCK_RESPONSE"
 	}
@@ -224,31 +252,31 @@ func (cmd *ExecCmd) Run() error {
 	responseText := cmd.buildResponseText(prompt)
 
 	if config.Signal != "" {
-		handleSignal(config)
+		handleMockSignal(config)
 		return nil
 	}
 
-	_ = writeNonJSONLine(os.Stdout, "Mock initialization info... (non-JSON)")
+	_ = writeMockNonJSONLine(os.Stdout, "Mock initialization info... (non-JSON)")
 
 	if config.EmptyLines {
-		_ = writeEmptyLine(os.Stdout)
+		_ = writeMockEmptyLine(os.Stdout)
 	}
 
 	if config.MalformedJSON {
-		_ = writeMalformedJSON(os.Stdout)
+		_ = writeMockMalformedJSON(os.Stdout)
 		return nil
 	}
 
-	_ = writeInit(os.Stdout, sessionID)
+	_ = writeMockInit(os.Stdout, sessionID)
 
 	if config.EmptyLines {
-		_ = writeEmptyLine(os.Stdout)
+		_ = writeMockEmptyLine(os.Stdout)
 	}
 
 	time.Sleep(10 * time.Millisecond)
 
 	if config.PartialFail {
-		_ = writeAssistant(os.Stdout, responseText)
+		_ = writeMockAssistant(os.Stdout, responseText)
 		if config.Stderr != "" {
 			_, _ = fmt.Fprintln(os.Stderr, config.Stderr)
 		}
@@ -256,22 +284,22 @@ func (cmd *ExecCmd) Run() error {
 	}
 
 	if config.MultiAssistant {
-		_ = writeAssistant(os.Stdout, "First part of response")
+		_ = writeMockAssistant(os.Stdout, "First part of response")
 		if config.EmptyLines {
-			_ = writeEmptyLine(os.Stdout)
+			_ = writeMockEmptyLine(os.Stdout)
 		}
-		_ = writeAssistant(os.Stdout, "Second part of response")
+		_ = writeMockAssistant(os.Stdout, "Second part of response")
 		if config.EmptyLines {
-			_ = writeEmptyLine(os.Stdout)
+			_ = writeMockEmptyLine(os.Stdout)
 		}
-		_ = writeAssistant(os.Stdout, "Third part of response")
+		_ = writeMockAssistant(os.Stdout, "Third part of response")
 		responseText = "First part of responseSecond part of responseThird part of response"
 	} else {
-		_ = writeAssistant(os.Stdout, responseText)
+		_ = writeMockAssistant(os.Stdout, responseText)
 	}
 
 	if config.EmptyLines {
-		_ = writeEmptyLine(os.Stdout)
+		_ = writeMockEmptyLine(os.Stdout)
 	}
 
 	if config.NoResult {
@@ -279,11 +307,11 @@ func (cmd *ExecCmd) Run() error {
 	}
 
 	if config.ResultError {
-		_ = writeResultError(os.Stdout, "execution error occurred")
+		_ = writeMockResultError(os.Stdout, "execution error occurred")
 		return nil
 	}
 
-	_ = writeResultSuccess(os.Stdout, responseText)
+	_ = writeMockResultSuccess(os.Stdout, responseText)
 
 	if config.Fail {
 		if config.Stderr != "" {
@@ -295,7 +323,7 @@ func (cmd *ExecCmd) Run() error {
 	return nil
 }
 
-func (cmd *ExecCmd) buildResponseText(prompt string) string {
+func (cmd *claudeMockExecCmd) buildResponseText(prompt string) string {
 	text := "Mock response to: " + prompt
 
 	if cmd.Model != "" {
@@ -317,11 +345,8 @@ func (cmd *ExecCmd) buildResponseText(prompt string) string {
 	return text
 }
 
-// Run handles mcp add command.
-//
-//nolint:unparam // Kong requires Run() error signature
-func (cmd *MCPAddCmd) Run() error {
-	config := loadMockConfig()
+func (cmd *claudeMockMCPAddCmd) Run() error {
+	config := loadClaudeMockConfig()
 
 	if config.MCPAddFail {
 		if config.MCPAddNoOutput {
@@ -334,11 +359,8 @@ func (cmd *MCPAddCmd) Run() error {
 	return nil
 }
 
-// Run handles mcp remove command.
-//
-//nolint:unparam // Kong requires Run() error signature
-func (cmd *MCPRemoveCmd) Run() error {
-	config := loadMockConfig()
+func (cmd *claudeMockMCPRemoveCmd) Run() error {
+	config := loadClaudeMockConfig()
 
 	if config.MCPNotFound {
 		_, _ = fmt.Fprintln(os.Stdout, "No MCP server found with name: "+cmd.Name)
@@ -353,21 +375,7 @@ func (cmd *MCPRemoveCmd) Run() error {
 	return nil
 }
 
-func main() {
-	ctx := kong.Parse(&CLI,
-		kong.Name("claude"),
-		kong.Description("Mock Claude CLI for testing."),
-		kong.NoDefaultHelp(),
-	)
-
-	err := ctx.Run()
-	if err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-}
-
-func readStdin() string {
+func readMockStdin() string {
 	scanner := bufio.NewScanner(os.Stdin)
 	var builder strings.Builder
 	for scanner.Scan() {
@@ -377,9 +385,9 @@ func readStdin() string {
 	return strings.TrimSpace(builder.String())
 }
 
-func handleSignal(config MockConfig) {
-	_ = writeNonJSONLine(os.Stdout, "Mock initialization info... (non-JSON)")
-	_ = writeInit(os.Stdout, "mock-session-id-12345")
+func handleMockSignal(config claudeMockConfig) {
+	_ = writeMockNonJSONLine(os.Stdout, "Mock initialization info... (non-JSON)")
+	_ = writeMockInit(os.Stdout, "mock-session-id-12345")
 
 	switch strings.ToUpper(config.Signal) {
 	case "SIGINT":
