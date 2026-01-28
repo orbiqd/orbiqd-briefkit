@@ -31,7 +31,13 @@ Follow these steps to get the project running on your local machine.
     make build-local
     ```
 
-4.  **Run the application:**
+4.  **Setup local agent configuration (optional):**
+    Build and configure all detected runtimes using locally built binaries. This overwrites existing configs.
+    ```bash
+    make setup
+    ```
+
+5.  **Run the application:**
     Execute the compiled binary.
     ```bash
     ./bin/briefkit-ctl
