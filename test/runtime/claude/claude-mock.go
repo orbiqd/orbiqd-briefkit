@@ -1,5 +1,7 @@
 package main
 
+// TODO: Rewrite mock to support all scenarios from issue #6
+
 import (
 	"bufio"
 	"encoding/json"
