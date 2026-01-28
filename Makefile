@@ -1,4 +1,4 @@
-.PHONY: build build-local build-release build-all build-mocks lint lint-go lint-goreleaser test clean run-briefkit-runner debug-briefkit-mcp
+.PHONY: build build-local build-release build-all build-mocks lint lint-go lint-goreleaser test clean run-briefkit-runner debug-briefkit-mcp setup
 
 # Local build (current platform via go build)
 build: build-local
@@ -46,6 +46,9 @@ run-briefkit-runner: build-local
 
 debug-briefkit-mcp: build-local
 	DANGEROUSLY_OMIT_AUTH=true npx @modelcontextprotocol/inspector ./bin/briefkit-mcp
+
+setup: build
+	./bin/briefkit-ctl setup --force
 
 # Clean
 clean:
