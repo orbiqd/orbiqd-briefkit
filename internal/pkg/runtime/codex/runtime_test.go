@@ -7,7 +7,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/mitchellh/go-homedir"
 	"github.com/neongreen/mono/lib/toml"
+	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -20,6 +22,197 @@ type writeFailFs struct {
 type readFailFs struct {
 	afero.Fs
 	path string
+}
+
+func TestRuntime_Discovery_WhenExecutableAvailable_ThenReturnsTrue(t *testing.T) {
+	resetCodexMockEnv(t)
+	setCodexMockExecutable(t)
+
+	found, err := NewRuntime().Discovery(context.Background())
+
+	require.NoError(t, err)
+	assert.True(t, found)
+}
+
+func TestRuntime_Discovery_WhenExecutableMissing_ThenReturnsError(t *testing.T) {
+	resetCodexMockEnv(t)
+	t.Setenv(envExecutablePath, filepath.Join(t.TempDir(), "missing-codex"))
+
+	found, err := NewRuntime().Discovery(context.Background())
+
+	require.Error(t, err)
+	assert.False(t, found)
+	assert.Contains(t, err.Error(), "executable from "+envExecutablePath+" not found")
+}
+
+func TestRuntime_Discovery_WhenExecutableNotFound_ThenReturnsFalse(t *testing.T) {
+	resetCodexMockEnv(t)
+	t.Setenv(envExecutablePath, "")
+	t.Setenv("PATH", "")
+
+	found, err := NewRuntime().Discovery(context.Background())
+
+	require.NoError(t, err)
+	assert.False(t, found)
+}
+
+func TestRuntime_Discovery_WhenContextCanceled_ThenReturnsError(t *testing.T) {
+	resetCodexMockEnv(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := NewRuntime().Discovery(ctx)
+
+	require.Error(t, err)
+	assert.ErrorIs(t, err, context.Canceled)
+}
+
+func TestRuntime_GetInfo_WhenVersionAvailable_ThenReturnsVersion(t *testing.T) {
+	resetCodexMockEnv(t)
+	setCodexMockExecutable(t)
+
+	info, err := NewRuntime().GetInfo(context.Background())
+
+	require.NoError(t, err)
+	assert.Equal(t, "1.0.0", info.Version)
+}
+
+func TestRuntime_GetInfo_WhenVersionCommandFails_ThenReturnsError(t *testing.T) {
+	resetCodexMockEnv(t)
+	setCodexMockExecutable(t)
+	t.Setenv("MOCK_CODEX_VERSION_FAIL", "1")
+
+	_, err := NewRuntime().GetInfo(context.Background())
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "read codex version")
+}
+
+func TestRuntime_GetInfo_WhenOutputHasNoSemver_ThenReturnsError(t *testing.T) {
+	resetCodexMockEnv(t)
+	setCodexMockExecutable(t)
+	t.Setenv("MOCK_CODEX_VERSION_NO_SEMVER", "1")
+
+	_, err := NewRuntime().GetInfo(context.Background())
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "parse codex version from output")
+}
+
+func TestRuntime_GetInfo_WhenContextCanceled_ThenReturnsError(t *testing.T) {
+	resetCodexMockEnv(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := NewRuntime().GetInfo(ctx)
+
+	require.Error(t, err)
+	assert.ErrorIs(t, err, context.Canceled)
+}
+
+func TestRuntime_RegisterMCPServer_WhenNameMissing_ThenReturnsError(t *testing.T) {
+	resetCodexMockEnv(t)
+	err := NewRuntime().RegisterMCPServer(context.Background(), "", validMCPServer())
+
+	require.Error(t, err)
+	assert.Equal(t, "missing mcp server name", err.Error())
+}
+
+func TestRuntime_RegisterMCPServer_WhenSTDIOConfigMissing_ThenReturnsError(t *testing.T) {
+	resetCodexMockEnv(t)
+	err := NewRuntime().RegisterMCPServer(
+		context.Background(),
+		agent.RuntimeMCPServerName("briefkit"),
+		agent.RuntimeMCPServer{},
+	)
+
+	require.Error(t, err)
+	assert.Equal(t, "missing mcp server stdio configuration", err.Error())
+}
+
+func TestRuntime_RegisterMCPServer_WhenCommandMissing_ThenReturnsError(t *testing.T) {
+	resetCodexMockEnv(t)
+	err := NewRuntime().RegisterMCPServer(
+		context.Background(),
+		agent.RuntimeMCPServerName("briefkit"),
+		agent.RuntimeMCPServer{
+			STDIO: &agent.RuntimeSTDIOMCPServer{Command: "   "},
+		},
+	)
+
+	require.Error(t, err)
+	assert.Equal(t, "missing mcp server stdio command", err.Error())
+}
+
+func TestRuntime_RegisterMCPServer_WhenRemoveNotFound_ThenReturnsNil(t *testing.T) {
+	resetCodexMockEnv(t)
+	home := setTempHome(t)
+	setCodexMockExecutable(t)
+	require.NoError(t, os.MkdirAll(filepath.Join(home, ".codex"), 0o750))
+	t.Setenv("MOCK_CODEX_MCP_NOT_FOUND", "1")
+
+	err := NewRuntime().RegisterMCPServer(context.Background(), agent.RuntimeMCPServerName("briefkit"), validMCPServer())
+
+	require.NoError(t, err)
+}
+
+func TestRuntime_RegisterMCPServer_WhenRemoveFails_ThenReturnsError(t *testing.T) {
+	resetCodexMockEnv(t)
+	setCodexMockExecutable(t)
+	t.Setenv("MOCK_CODEX_MCP_REMOVE_FAIL", "1")
+
+	err := NewRuntime().RegisterMCPServer(context.Background(), agent.RuntimeMCPServerName("briefkit"), validMCPServer())
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "codex mcp server removal")
+}
+
+func TestRuntime_RegisterMCPServer_WhenAddFailsWithOutput_ThenReturnsError(t *testing.T) {
+	resetCodexMockEnv(t)
+	setCodexMockExecutable(t)
+	t.Setenv("MOCK_CODEX_MCP_ADD_FAIL", "1")
+
+	err := NewRuntime().RegisterMCPServer(context.Background(), agent.RuntimeMCPServerName("briefkit"), validMCPServer())
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "codex mcp server registration")
+	assert.Contains(t, err.Error(), "already exists")
+}
+
+func TestRuntime_RegisterMCPServer_WhenAddFailsWithoutOutput_ThenReturnsError(t *testing.T) {
+	resetCodexMockEnv(t)
+	setCodexMockExecutable(t)
+	t.Setenv("MOCK_CODEX_MCP_ADD_FAIL", "1")
+	t.Setenv("MOCK_CODEX_MCP_ADD_NO_OUTPUT", "1")
+
+	err := NewRuntime().RegisterMCPServer(context.Background(), agent.RuntimeMCPServerName("briefkit"), validMCPServer())
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "codex mcp server registration")
+	assert.Contains(t, err.Error(), "exit status")
+}
+
+func TestRuntime_RegisterMCPServer_WhenAddSucceeds_ThenWritesTimeoutConfig(t *testing.T) {
+	resetCodexMockEnv(t)
+	home := setTempHome(t)
+	setCodexMockExecutable(t)
+	require.NoError(t, os.MkdirAll(filepath.Join(home, ".codex"), 0o750))
+
+	err := NewRuntime().RegisterMCPServer(context.Background(), agent.RuntimeMCPServerName("briefkit"), validMCPServer())
+
+	require.NoError(t, err)
+	assertConfigTimeout(t, afero.NewOsFs(), filepath.Join(home, ".codex", "config.toml"), `mcp_servers."briefkit".tool_timeout_sec`)
+}
+
+func TestRuntime_RegisterMCPServer_WhenContextCanceled_ThenReturnsError(t *testing.T) {
+	resetCodexMockEnv(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	err := NewRuntime().RegisterMCPServer(ctx, agent.RuntimeMCPServerName("briefkit"), validMCPServer())
+
+	require.Error(t, err)
+	assert.ErrorIs(t, err, context.Canceled)
 }
 
 func (fs readFailFs) Open(name string) (afero.File, error) {
@@ -48,7 +241,7 @@ func TestSetMcpServerTimeout_WhenConfigMissing_ThenCreatesFileWithTimeout(t *tes
 	err := runtime.setMcpServerTimeout(context.Background(), fs, "briefkit", configPath)
 
 	require.NoError(t, err)
-	assertConfigTimeout(t, fs, configPath, `mcp_servers."briefkit".tool_timeout_sec`, int64(600))
+	assertConfigTimeout(t, fs, configPath, `mcp_servers."briefkit".tool_timeout_sec`)
 }
 
 func TestSetMcpServerTimeout_WhenConfigExists_ThenPreservesOtherKeys(t *testing.T) {
@@ -84,7 +277,7 @@ func TestSetMcpServerTimeout_WhenTimeoutExists_ThenOverwritesValue(t *testing.T)
 	err := runtime.setMcpServerTimeout(context.Background(), fs, "briefkit", configPath)
 
 	require.NoError(t, err)
-	assertConfigTimeout(t, fs, configPath, `mcp_servers."briefkit".tool_timeout_sec`, int64(600))
+	assertConfigTimeout(t, fs, configPath, `mcp_servers."briefkit".tool_timeout_sec`)
 }
 
 func TestSetMcpServerTimeout_WhenConfigExists_ThenPreservesFileMode(t *testing.T) {
@@ -169,12 +362,13 @@ func TestSetMcpServerTimeout_WhenServerNameHasDot_ThenUsesQuotedKey(t *testing.T
 	err := runtime.setMcpServerTimeout(context.Background(), fs, "brief.kit", configPath)
 
 	require.NoError(t, err)
-	assertConfigTimeout(t, fs, configPath, `mcp_servers."brief.kit".tool_timeout_sec`, int64(600))
+	assertConfigTimeout(t, fs, configPath, `mcp_servers."brief.kit".tool_timeout_sec`)
 }
 
-func assertConfigTimeout(t *testing.T, fs afero.Fs, configPath string, key string, expected int64) {
+func assertConfigTimeout(t *testing.T, fs afero.Fs, configPath string, key string) {
 	t.Helper()
 
+	expected := int64(codexDefaultToolTimeout.Seconds())
 	doc := readTomlDoc(t, fs, configPath)
 	value, err := doc.Get(key)
 	require.NoError(t, err)
@@ -192,4 +386,70 @@ func readTomlDoc(t *testing.T, fs afero.Fs, configPath string) *toml.Document {
 	doc, err := toml.Parse(contents)
 	require.NoError(t, err)
 	return doc
+}
+
+func validMCPServer() agent.RuntimeMCPServer {
+	return agent.RuntimeMCPServer{
+		STDIO: &agent.RuntimeSTDIOMCPServer{
+			Command:   "echo",
+			Arguments: []string{"hello"},
+		},
+	}
+}
+
+func setCodexMockExecutable(t *testing.T) {
+	t.Helper()
+
+	path, err := os.Executable()
+	require.NoError(t, err)
+	require.FileExists(t, path)
+
+	t.Setenv(envExecutablePath, path)
+	t.Setenv(codexMockEnvKey, "1")
+}
+
+func setTempHome(t *testing.T) string {
+	t.Helper()
+
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	homedir.Reset()
+	return home
+}
+
+func resetCodexMockEnv(t *testing.T) {
+	t.Helper()
+
+	keys := []string{
+		"MOCK_CODEX_FAIL",
+		"MOCK_CODEX_EXIT_CODE",
+		"MOCK_CODEX_STDERR",
+		"MOCK_CODEX_MALFORMED_JSON",
+		"MOCK_CODEX_NO_RESULT",
+		"MOCK_CODEX_NO_THREAD_STARTED",
+		"MOCK_CODEX_SIGNAL",
+		"MOCK_CODEX_PARTIAL_FAIL",
+		"MOCK_CODEX_EMPTY_LINES",
+		"MOCK_CODEX_WHITESPACE_VARIATIONS",
+		"MOCK_CODEX_UNKNOWN_EVENTS",
+		"MOCK_CODEX_MULTI_ITEM",
+		"MOCK_CODEX_EMPTY_TEXT",
+		"MOCK_CODEX_OTHER_ITEM_TYPE",
+		"MOCK_CODEX_EMPTY_STDIN",
+		"MOCK_CODEX_MIXED_OUTPUT",
+		"MOCK_CODEX_VERSION_FAIL",
+		"MOCK_CODEX_VERSION_NO_SEMVER",
+		"MOCK_CODEX_MCP_NOT_FOUND",
+		"MOCK_CODEX_MCP_REMOVE_FAIL",
+		"MOCK_CODEX_MCP_ADD_FAIL",
+		"MOCK_CODEX_MCP_ADD_NO_OUTPUT",
+		"MOCK_CODEX_INVALID_SESSION",
+		codexMockEnvKey,
+		envExecutablePath,
+	}
+
+	for _, key := range keys {
+		t.Setenv(key, "")
+	}
 }

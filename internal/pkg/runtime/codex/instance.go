@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
 )
 
 type Instance struct {
@@ -48,9 +47,9 @@ func newInstance(ctx context.Context, executionId agent.ExecutionID, executionIn
 		return nil, err
 	}
 
-	path, err := utils.LookupExecutable(ctx, []string{"codex"})
+	path, err := locateExecutable(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("lookup codex executable: %w", err)
+		return nil, err
 	}
 
 	runtimeArguments := NewCodexArguments()

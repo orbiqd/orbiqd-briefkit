@@ -61,7 +61,7 @@ func (runtime *Runtime) Discovery(ctx context.Context) (bool, error) {
 		return false, err
 	}
 
-	_, err := utils.LookupExecutable(ctx, []string{"codex"})
+	_, err := locateExecutable(ctx)
 	if err == nil {
 		return true, nil
 	}
@@ -88,9 +88,9 @@ func (runtime *Runtime) GetInfo(ctx context.Context) (agent.RuntimeInfo, error) 
 		return agent.RuntimeInfo{}, err
 	}
 
-	path, err := utils.LookupExecutable(ctx, []string{"codex"})
+	path, err := locateExecutable(ctx)
 	if err != nil {
-		return agent.RuntimeInfo{}, fmt.Errorf("lookup codex executable: %w", err)
+		return agent.RuntimeInfo{}, err
 	}
 
 	// #nosec G204 - path comes from LookupExecutable with hardcoded name
@@ -126,7 +126,7 @@ func (runtime *Runtime) RegisterMCPServer(ctx context.Context, serverName agent.
 		return errors.New("missing mcp server stdio command")
 	}
 
-	path, err := utils.LookupExecutable(ctx, []string{"codex"})
+	path, err := locateExecutable(ctx)
 	if err != nil {
 		return err
 	}
