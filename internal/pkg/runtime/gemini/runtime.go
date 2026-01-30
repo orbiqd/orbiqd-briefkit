@@ -30,7 +30,7 @@ func (runtime *Runtime) Execute(ctx context.Context, executionId agent.Execution
 		return nil, err
 	}
 
-	runtimeConfig, err := utils.AnyToStruct[Config](agentConfig.Runtime.Config)
+	runtimeConfig, err := utils.AnyToStruct[RuntimeConfig](agentConfig.Runtime.Config)
 	if err != nil {
 		return nil, fmt.Errorf("convert runtime config: %w", err)
 	}
@@ -60,7 +60,7 @@ func (runtime *Runtime) Discovery(ctx context.Context) (bool, error) {
 }
 
 func (runtime *Runtime) GetDefaultConfig(ctx context.Context) (agent.RuntimeConfig, error) {
-	return Config{}, nil
+	return RuntimeConfig{}, nil
 }
 
 func (runtime *Runtime) GetDefaultFeatures(ctx context.Context) (agent.RuntimeFeatures, error) {
