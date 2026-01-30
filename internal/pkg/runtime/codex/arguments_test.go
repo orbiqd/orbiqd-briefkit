@@ -159,6 +159,31 @@ func TestCodexArguments_ApplyRuntimeConfig_WhenUnmarshalFails_ThenReturnsError(t
 	assert.Contains(t, err.Error(), "unmarshal codex runtime config")
 }
 
+func TestCodexArguments_ApplyRuntimeConfig_WhenCustomStruct_ThenUnmarshalsCorrectly(t *testing.T) {
+	type customConfig struct {
+		RequireWorkspaceRepository bool `json:"requireWorkspaceRepository"`
+	}
+
+	args := NewCodexArguments()
+
+	err := args.ApplyRuntimeConfig(customConfig{RequireWorkspaceRepository: false})
+
+	require.NoError(t, err)
+	require.NotNil(t, args.SkipGitRepoCheck)
+	assert.True(t, *args.SkipGitRepoCheck)
+}
+
+func TestCodexArguments_ApplyRuntimeConfig_WhenMapMissingRequiredKey_ThenAppliesDefaults(t *testing.T) {
+	args := NewCodexArguments()
+
+	err := args.ApplyRuntimeConfig(map[string]any{
+		"someOtherKey": "value",
+	})
+
+	require.NoError(t, err)
+	assert.Nil(t, args.SkipGitRepoCheck)
+}
+
 func TestCodexArguments_ApplyRuntimeFeatures_WhenConfigOverridesNil_ThenKeepsNil(t *testing.T) {
 	args := &CodexArguments{}
 	features := agent.RuntimeFeatures{}

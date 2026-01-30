@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/neongreen/mono/lib/toml"
@@ -22,6 +23,19 @@ type writeFailFs struct {
 type readFailFs struct {
 	afero.Fs
 	path string
+}
+
+type statFailFs struct {
+	afero.Fs
+	path string
+	err  error
+}
+
+func (fs statFailFs) Stat(name string) (os.FileInfo, error) {
+	if name == fs.path {
+		return nil, fs.err
+	}
+	return fs.Fs.Stat(name)
 }
 
 func TestRuntime_Discovery_WhenExecutableAvailable_ThenReturnsTrue(t *testing.T) {
@@ -215,6 +229,114 @@ func TestRuntime_RegisterMCPServer_WhenContextCanceled_ThenReturnsError(t *testi
 	assert.ErrorIs(t, err, context.Canceled)
 }
 
+func TestRuntime_GetDefaultConfig_WhenCalled_ThenReturnsExpectedDefaults(t *testing.T) {
+	config, err := NewRuntime().GetDefaultConfig(context.Background())
+
+	require.NoError(t, err)
+	codexConfig, ok := config.(RuntimeConfig)
+	require.True(t, ok)
+	assert.False(t, codexConfig.RequireWorkspaceRepository)
+}
+
+func TestRuntime_GetDefaultFeatures_WhenCalled_ThenReturnsEmptyFeatures(t *testing.T) {
+	features, err := NewRuntime().GetDefaultFeatures(context.Background())
+
+	require.NoError(t, err)
+	assert.Equal(t, agent.RuntimeFeatures{}, features)
+}
+
+func TestRuntime_Execute_WhenValidConfig_ThenReturnsInstance(t *testing.T) {
+	resetCodexMockEnv(t)
+	setCodexMockExecutable(t)
+	t.Setenv("BRIEFKIT_RUNTIME_LOG_DIR", t.TempDir())
+
+	config := agent.Config{}
+	config.Runtime.Config = RuntimeConfig{RequireWorkspaceRepository: false}
+
+	instance, err := NewRuntime().Execute(
+		context.Background(),
+		agent.ExecutionID("test-exec"),
+		agent.ExecutionInput{Prompt: "hello"},
+		config,
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, instance)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	result, err := instance.Wait(ctx)
+
+	require.NoError(t, err)
+	assert.Contains(t, result.Response, "hello")
+}
+
+func TestRuntime_Execute_WhenConfigAsMap_ThenReturnsInstance(t *testing.T) {
+	resetCodexMockEnv(t)
+	setCodexMockExecutable(t)
+	t.Setenv("BRIEFKIT_RUNTIME_LOG_DIR", t.TempDir())
+
+	config := agent.Config{}
+	config.Runtime.Config = map[string]any{"requireWorkspaceRepository": false}
+
+	instance, err := NewRuntime().Execute(
+		context.Background(),
+		agent.ExecutionID("test-exec"),
+		agent.ExecutionInput{Prompt: "hello"},
+		config,
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, instance)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	_, err = instance.Wait(ctx)
+
+	require.NoError(t, err)
+}
+
+func TestRuntime_Execute_WhenConfigInvalid_ThenReturnsError(t *testing.T) {
+	resetCodexMockEnv(t)
+	setCodexMockExecutable(t)
+	t.Setenv("BRIEFKIT_RUNTIME_LOG_DIR", t.TempDir())
+
+	config := agent.Config{}
+	config.Runtime.Config = "invalid-not-a-struct"
+
+	_, err := NewRuntime().Execute(
+		context.Background(),
+		agent.ExecutionID("test-exec"),
+		agent.ExecutionInput{Prompt: "hello"},
+		config,
+	)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "convert runtime config")
+}
+
+func TestRuntime_Execute_WhenContextCanceled_ThenReturnsError(t *testing.T) {
+	resetCodexMockEnv(t)
+	setCodexMockExecutable(t)
+	t.Setenv("BRIEFKIT_RUNTIME_LOG_DIR", t.TempDir())
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	config := agent.Config{}
+	config.Runtime.Config = RuntimeConfig{RequireWorkspaceRepository: false}
+
+	_, err := NewRuntime().Execute(
+		ctx,
+		agent.ExecutionID("test-exec"),
+		agent.ExecutionInput{Prompt: "hello"},
+		config,
+	)
+
+	require.Error(t, err)
+	assert.ErrorIs(t, err, context.Canceled)
+}
+
 func (fs readFailFs) Open(name string) (afero.File, error) {
 	if name == fs.path {
 		return nil, errors.New("read failure")
@@ -350,6 +472,17 @@ func TestSetMcpServerTimeout_WhenWriteFails_ThenReturnsError(t *testing.T) {
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "codex config write")
+}
+
+func TestSetMcpServerTimeout_WhenStatFails_ThenReturnsError(t *testing.T) {
+	baseFs := afero.NewMemMapFs()
+	configPath := filepath.Join("config", "config.toml")
+	fs := statFailFs{Fs: baseFs, path: configPath, err: errors.New("permission denied")}
+
+	err := (&Runtime{}).setMcpServerTimeout(context.Background(), fs, "briefkit", configPath)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "codex config stat")
 }
 
 func TestSetMcpServerTimeout_WhenServerNameHasDot_ThenUsesQuotedKey(t *testing.T) {
