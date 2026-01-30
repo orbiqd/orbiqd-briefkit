@@ -60,6 +60,7 @@ func (a *arguments) valueToString(value any) (string, error) {
 }
 
 func (a *arguments) ToList() []string {
+	// ToList does not enforce argument ordering.
 	var list []string
 
 	for flag := range a.flags {
