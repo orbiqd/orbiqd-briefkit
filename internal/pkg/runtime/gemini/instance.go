@@ -42,7 +42,7 @@ type geminiEvent struct {
 	Delta     bool   `json:"delta,omitempty"`
 }
 
-func newInstance(ctx context.Context, executionId agent.ExecutionID, executionInput agent.ExecutionInput, runtimeConfig Config, runtimeFeatures agent.RuntimeFeatures, logDir string) (*Instance, error) {
+func newInstance(ctx context.Context, executionId agent.ExecutionID, executionInput agent.ExecutionInput, runtimeConfig RuntimeConfig, runtimeFeatures agent.RuntimeFeatures, logDir string) (*Instance, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -52,27 +52,24 @@ func newInstance(ctx context.Context, executionId agent.ExecutionID, executionIn
 		return nil, fmt.Errorf("lookup gemini executable: %w", err)
 	}
 
-	runtimeArguments := defaultArguments()
+	runtimeArguments := NewGeminiArguments()
 
-	err = applyRuntimeConfigArguments(runtimeConfig)
+	err = runtimeArguments.ApplyRuntimeConfig(runtimeConfig)
 	if err != nil {
 		return nil, fmt.Errorf("apply runtime config: %w", err)
 	}
 
-	applyRuntimeFeaturesArguments(runtimeArguments, runtimeFeatures)
+	err = runtimeArguments.ApplyRuntimeFeatures(runtimeFeatures)
+	if err != nil {
+		return nil, fmt.Errorf("apply runtime features: %w", err)
+	}
 
-	err = applyExecutionInputArguments(runtimeArguments, executionInput)
+	err = runtimeArguments.ApplyExecutionInput(executionInput)
 	if err != nil {
 		return nil, fmt.Errorf("apply execution input: %w", err)
 	}
 
-	// Force JSON stream output for parsing
-	if err = runtimeArguments.SetValue("output-format", "stream-json"); err != nil {
-		return nil, fmt.Errorf("set output-format: %w", err)
-	}
-
-	// Construct arguments
-	instanceArgumentsList := runtimeArguments.ToList()
+	instanceArgumentsList := runtimeArguments.ToSlice()
 
 	// #nosec G204 - path comes from LookupExecutable with hardcoded name, arguments are constructed internally
 	cmd := exec.CommandContext(ctx, path, instanceArgumentsList...)
