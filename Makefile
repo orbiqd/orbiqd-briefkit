@@ -26,10 +26,7 @@ lint-goreleaser:
 	goreleaser check
 
 # Test
-build-mocks: build-codex-mock build-gemini-mock
-
-build-codex-mock:
-	go build -o test/runtime/codex/codex-mock ./test/runtime/codex/codex-mock.go
+build-mocks: build-gemini-mock
 
 build-gemini-mock:
 	go build -o test/runtime/gemini/gemini-mock ./test/runtime/gemini/gemini-mock.go
