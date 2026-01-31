@@ -11,6 +11,8 @@ import (
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
 )
 
+var spawnRunner = briefkitrunner.Spawn
+
 // AskCmd runs a prompt with specified model and options.
 type AskCmd struct {
 	AgentID        agent.AgentID         `help:"ID of the agent." required:"true"`
@@ -53,7 +55,7 @@ func (command *AskCmd) Run(ctx context.Context, executionRepository agent.Execut
 
 	slog.Info("Created execution.", slog.String("executionId", string(executionID)))
 
-	if err := briefkitrunner.Spawn(ctx, executionID); err != nil {
+	if err := spawnRunner(ctx, executionID); err != nil {
 		return fmt.Errorf("spawn runner: %w", err)
 	}
 
