@@ -118,12 +118,12 @@ Verify your agent configurations:
 briefkit-ctl agent list
 ```
 
-### 4. Execute Your First Prompt
+### 4. Ask Your First Prompt
 
 Run a prompt with one of your configured agents:
 
 ```bash
-briefkit-ctl exec --agent-id claude-code "What is the capital of France?"
+briefkit-ctl ask --agent-id claude-code "What is the capital of France?"
 ```
 
 The agent ID comes from the filename in `~/.orbiqd/briefkit/agents/` (e.g., `claude-code.yaml` → `claude-code`).
@@ -133,7 +133,7 @@ The agent ID comes from the filename in `~/.orbiqd/briefkit/agents/` (e.g., `cla
 Continue a previous conversation by using the conversation ID from the output:
 
 ```bash
-briefkit-ctl exec --agent-id claude-code \
+briefkit-ctl ask --agent-id claude-code \
   --conversation-id <conversation-id-from-previous-run> \
   "Tell me more about its history"
 ```
@@ -271,17 +271,17 @@ briefkit-ctl agent discovery --runtime-kind claude-code --runtime-kind codex
 
 ### Execution
 
-#### Execute Prompt
+#### Ask Prompt
 
 ```bash
-briefkit-ctl exec --agent-id <id> [options] <prompt>
+briefkit-ctl ask --agent-id <id> [options] <prompt>
 ```
 
-Execute a prompt with the specified agent.
+Send a prompt to the specified agent.
 
 **Required:**
 - `--agent-id <id>` - Agent identifier (from `briefkit-ctl agent list`)
-- `<prompt>` - Prompt text to execute
+- `<prompt>` - Prompt text to send
 
 **Options:**
 - `--model <model>` - Override the default model for this execution
@@ -293,16 +293,16 @@ Execute a prompt with the specified agent.
 
 ```bash
 # Simple execution
-briefkit-ctl exec --agent-id codex "Analyze this codebase structure"
+briefkit-ctl ask --agent-id codex "Analyze this codebase structure"
 
 # With model override
-briefkit-ctl exec --agent-id claude-code --model claude-opus-4 "Review this pull request"
+briefkit-ctl ask --agent-id claude-code --model claude-opus-4 "Review this pull request"
 
 # Resume conversation
-briefkit-ctl exec --agent-id gemini --conversation-id abc123 "Continue from where we left off"
+briefkit-ctl ask --agent-id gemini --conversation-id abc123 "Continue from where we left off"
 
 # Custom timeout
-briefkit-ctl exec --agent-id codex --timeout 10m "Perform a comprehensive security audit"
+briefkit-ctl ask --agent-id codex --timeout 10m "Perform a comprehensive security audit"
 ```
 
 **Output:**
@@ -410,7 +410,7 @@ When you use BriefKit tools from Claude Desktop (or any MCP client):
 
 **Example workflow:**
 ```
-You (in Claude Desktop): Use exec_codex to analyze the authentication module
+You (in Claude Desktop): Use ask_codex to analyze the authentication module
 → Codex runs in /your/project/directory
 → Reads auth/*.go files directly
 → Provides analysis with full project context
@@ -424,12 +424,12 @@ This workspace-native execution is **unique to BriefKit**—most MCP servers run
 
 ### Available MCP Tools
 
-For each configured agent, BriefKit exposes a tool following the naming pattern `exec_<agent_id>` (in snake_case).
+For each configured agent, BriefKit exposes a tool following the naming pattern `ask_<agent_id>` (in snake_case).
 
 **Example tools:**
-- `exec_claude_code` - Execute prompts with Claude Code
-- `exec_codex` - Execute prompts with Codex
-- `exec_gemini` - Execute prompts with Gemini
+- `ask_claude_code` - Send prompts to Claude Code
+- `ask_codex` - Send prompts to Codex
+- `ask_gemini` - Send prompts to Gemini
 
 ### Tool Parameters
 
@@ -442,7 +442,7 @@ Each tool accepts the following parameters:
 ### Example Usage in Claude Desktop
 
 ```
-User: Use the exec_codex tool to analyze the project structure and identify potential performance bottlenecks.
+User: Use the ask_codex tool to analyze the project structure and identify potential performance bottlenecks.
 ```
 
 Claude Desktop will invoke the tool and display the results from Codex.
@@ -450,7 +450,7 @@ Claude Desktop will invoke the tool and display the results from Codex.
 To continue a conversation:
 
 ```
-User: Use exec_codex with the conversationId from the previous response to propose optimizations.
+User: Use ask_codex with the conversationId from the previous response to propose optimizations.
 ```
 
 ### Debugging MCP Server
@@ -474,13 +474,13 @@ Script multi-agent workflows with full workspace access:
 # Run from your project directory - agents will have full context
 
 # Get Claude's architectural analysis
-claude_result=$(briefkit-ctl exec --agent-id claude-code "Analyze the system architecture")
+claude_result=$(briefkit-ctl ask --agent-id claude-code "Analyze the system architecture")
 
 # Get Codex's security review
-codex_result=$(briefkit-ctl exec --agent-id codex "Review for security vulnerabilities")
+codex_result=$(briefkit-ctl ask --agent-id codex "Review for security vulnerabilities")
 
 # Get Gemini's test coverage analysis
-gemini_result=$(briefkit-ctl exec --agent-id gemini "Analyze test coverage")
+gemini_result=$(briefkit-ctl ask --agent-id gemini "Analyze test coverage")
 
 # Combine results for comprehensive review
 echo "=== Multi-Agent Analysis ===" > report.md
@@ -496,11 +496,11 @@ All agents run in your current directory and can read/analyze your actual projec
 Seamlessly use multiple agents within Claude Desktop conversations with full project access:
 
 1. Open Claude Desktop **in your project directory**
-2. Ask: "Use exec_codex to analyze the authentication module"
+2. Ask: "Use ask_codex to analyze the authentication module"
    - Codex runs in your workspace, reads `auth/*.go` files directly
-3. Ask: "Now use exec_codex to refactor it for dependency injection"
+3. Ask: "Now use ask_codex to refactor it for dependency injection"
    - Codex modifies your actual project files in place
-4. Ask: "Use exec_claude_code to add comprehensive tests"
+4. Ask: "Use ask_claude_code to add comprehensive tests"
    - Claude Code sees the refactored code and creates tests in your project
 5. Continue the conversation with context from both agents—**no file uploads, no copying code**
 
@@ -527,17 +527,17 @@ Build long-running conversations across multiple sessions:
 
 ```bash
 # Start a conversation
-RESULT=$(briefkit-ctl exec --agent-id claude-code "Let's design a new feature for user authentication")
+RESULT=$(briefkit-ctl ask --agent-id claude-code "Let's design a new feature for user authentication")
 
 # Extract conversation ID from result
 CONV_ID=$(echo "$RESULT" | jq -r '.conversationId')
 
 # Continue later (even after restart)
-briefkit-ctl exec --agent-id claude-code --conversation-id "$CONV_ID" \
+briefkit-ctl ask --agent-id claude-code --conversation-id "$CONV_ID" \
   "Now let's add tests for the authentication feature"
 
 # Keep going
-briefkit-ctl exec --agent-id claude-code --conversation-id "$CONV_ID" \
+briefkit-ctl ask --agent-id claude-code --conversation-id "$CONV_ID" \
   "Deploy this to staging"
 ```
 
@@ -612,7 +612,7 @@ export BRIEFKIT_RUNTIME_LOG_DIR=/tmp/briefkit-logs
 
 ### Agent Config Not Found
 
-**Problem:** `briefkit-ctl exec` fails with "agent config not found" or similar error.
+**Problem:** `briefkit-ctl ask` fails with "agent config not found" or similar error.
 
 **Solutions:**
 - Run `briefkit-ctl agent list` to see available configured agents
@@ -629,7 +629,7 @@ export BRIEFKIT_RUNTIME_LOG_DIR=/tmp/briefkit-logs
 Increase the timeout with the `--timeout` flag:
 
 ```bash
-briefkit-ctl exec --agent-id codex --timeout 10m "Complex analysis task"
+briefkit-ctl ask --agent-id codex --timeout 10m "Complex analysis task"
 ```
 
 Default timeout is 5 minutes. Use values like `30s`, `5m`, `1h`.
@@ -664,7 +664,7 @@ tail -f ~/.orbiqd/briefkit/logs/runtime/<execution-id>.log
 
 # Or set a custom log directory
 export BRIEFKIT_RUNTIME_LOG_DIR=/tmp/briefkit-logs
-briefkit-ctl exec --agent-id claude-code "test"
+briefkit-ctl ask --agent-id claude-code "test"
 tail -f /tmp/briefkit-logs/*.log
 ```
 
