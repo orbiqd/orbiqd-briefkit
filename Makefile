@@ -1,4 +1,4 @@
-.PHONY: build build-local build-release build-all build-mocks lint lint-go lint-goreleaser test clean run-briefkit-runner debug-briefkit-mcp setup
+.PHONY: build build-local build-release build-all lint lint-go lint-goreleaser test clean run-briefkit-runner debug-briefkit-mcp setup
 
 # Local build (current platform via go build)
 build: build-local
@@ -26,12 +26,7 @@ lint-goreleaser:
 	goreleaser check
 
 # Test
-build-mocks: build-gemini-mock
-
-build-gemini-mock:
-	go build -o test/runtime/gemini/gemini-mock ./test/runtime/gemini/gemini-mock.go
-
-test: build-mocks lint
+test: lint
 	go test -coverprofile=coverage.out ./...
 
 # Run targets
