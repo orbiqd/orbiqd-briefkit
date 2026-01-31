@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.4.0](https://github.com/orbiqd/orbiqd-briefkit/compare/v0.3.1...v0.4.0) (2026-01-31)
+
+
+### Features
+
+* **test:** Implement comprehensive Claude Code CLI mock ([#23](https://github.com/orbiqd/orbiqd-briefkit/issues/23)) ([ab9a115](https://github.com/orbiqd/orbiqd-briefkit/commit/ab9a115a8ee95e98d1a0ea65d985f02d45f4659f))
+* **test:** Implement comprehensive Codex CLI mock ([#24](https://github.com/orbiqd/orbiqd-briefkit/issues/24)) ([4b405a3](https://github.com/orbiqd/orbiqd-briefkit/commit/4b405a384bc01d6f6429a73835965fe61539f9f2))
+
+
+### Bug Fixes
+
+* **ci:** use GitHub App token in release-please to trigger release workflow ([eba5265](https://github.com/orbiqd/orbiqd-briefkit/commit/eba526564db1d489374f0a5dc6cf4cf63fcb68bd))
+* **cli:** preserve symlink path in ResolveExecutable ([#30](https://github.com/orbiqd/orbiqd-briefkit/issues/30)) ([abf1e26](https://github.com/orbiqd/orbiqd-briefkit/commit/abf1e26c2e7f2e44ecad70b0848f177b75f16ff8))
+
+
+### Code Refactoring
+
+* **gemini:** argument handling ([#27](https://github.com/orbiqd/orbiqd-briefkit/issues/27)) ([ad614c6](https://github.com/orbiqd/orbiqd-briefkit/commit/ad614c632d0d471ca457f98701082f0d10d80c23))
+
 ## [0.3.1](https://github.com/orbiqd/orbiqd-briefkit/compare/v0.3.0...v0.3.1) (2026-01-27)
 
 
