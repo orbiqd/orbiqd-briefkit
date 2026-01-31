@@ -14,6 +14,8 @@ import (
 
 var ErrExecutableNotFound = errors.New("executable not found")
 
+var osExecutable = os.Executable
+
 const (
 	ExecutableCtl    = "briefkit-ctl"
 	ExecutableMCP    = "briefkit-mcp"
@@ -49,17 +51,12 @@ func ResolveExecutable(ctx context.Context, executableName string) (string, erro
 		return envPath, nil
 	}
 
-	execPath, err := os.Executable()
+	execPath, err := osExecutable()
 	if err != nil {
 		return "", fmt.Errorf("get executable path: %w", err)
 	}
 
-	evalPath, err := filepath.EvalSymlinks(execPath)
-	if err != nil {
-		return "", fmt.Errorf("eval symlinks: %w", err)
-	}
-
-	execDir := filepath.Dir(evalPath)
+	execDir := filepath.Dir(execPath)
 	executablePath := filepath.Join(execDir, executableName)
 
 	if _, err := os.Stat(executablePath); err == nil {

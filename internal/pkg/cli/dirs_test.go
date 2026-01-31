@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -50,4 +51,37 @@ func TestResolveRuntimeLogDir_RelativePath_ReturnsAbsolute(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.True(t, filepath.IsAbs(dir), "expected absolute path, got: %s", dir)
+}
+
+func TestResolveExecutable_WhenCalledViaSymlink_ThenPreservesSymlinkPath(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	realDir := filepath.Join(tmpDir, "real")
+	symlinkDir := filepath.Join(tmpDir, "symlink")
+
+	require.NoError(t, os.MkdirAll(realDir, 0o750))
+
+	realExecutable := filepath.Join(realDir, "briefkit-ctl")
+	targetExecutable := filepath.Join(realDir, ExecutableMCP)
+
+	require.NoError(t, os.WriteFile(realExecutable, []byte("#!/bin/sh\necho test"), 0o600))
+	require.NoError(t, os.WriteFile(targetExecutable, []byte("#!/bin/sh\necho mcp"), 0o600))
+
+	require.NoError(t, os.Symlink(realDir, symlinkDir))
+
+	symlinkExecutable := filepath.Join(symlinkDir, "briefkit-ctl")
+
+	originalOsExecutable := osExecutable
+	osExecutable = func() (string, error) {
+		return symlinkExecutable, nil
+	}
+	t.Cleanup(func() {
+		osExecutable = originalOsExecutable
+	})
+
+	result, err := ResolveExecutable(context.Background(), ExecutableMCP)
+
+	require.NoError(t, err)
+	assert.Equal(t, filepath.Join(symlinkDir, ExecutableMCP), result,
+		"should return path using symlink directory, not resolved real path")
 }
