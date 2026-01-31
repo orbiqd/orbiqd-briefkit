@@ -11,8 +11,10 @@ import (
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
 )
 
-// ExecCmd runs a prompt with specified model and options.
-type ExecCmd struct {
+var spawnRunner = briefkitrunner.Spawn
+
+// AskCmd runs a prompt with specified model and options.
+type AskCmd struct {
 	AgentID        agent.AgentID         `help:"ID of the agent." required:"true"`
 	Auto           bool                  `help:"Enable automatic mode"`
 	Timeout        time.Duration         `default:"5m"`
@@ -22,7 +24,7 @@ type ExecCmd struct {
 	Prompt string `arg:"" required:"" help:"Prompt to execute"`
 }
 
-func (command *ExecCmd) Run(ctx context.Context, executionRepository agent.ExecutionRepository, agentConfigRepository agent.ConfigRepository) error {
+func (command *AskCmd) Run(ctx context.Context, executionRepository agent.ExecutionRepository, agentConfigRepository agent.ConfigRepository) error {
 	agentExists, err := agentConfigRepository.Exists(ctx, command.AgentID)
 	if err != nil {
 		return fmt.Errorf("agent config exists: %w", err)
@@ -53,7 +55,7 @@ func (command *ExecCmd) Run(ctx context.Context, executionRepository agent.Execu
 
 	slog.Info("Created execution.", slog.String("executionId", string(executionID)))
 
-	if err := briefkitrunner.Spawn(ctx, executionID); err != nil {
+	if err := spawnRunner(ctx, executionID); err != nil {
 		return fmt.Errorf("spawn runner: %w", err)
 	}
 
@@ -66,7 +68,7 @@ func (command *ExecCmd) Run(ctx context.Context, executionRepository agent.Execu
 	return command.waitForCompletion(pollCtx, executionRepository, executionID)
 }
 
-func (command *ExecCmd) waitForCompletion(ctx context.Context, repo agent.ExecutionRepository, id agent.ExecutionID) error {
+func (command *AskCmd) waitForCompletion(ctx context.Context, repo agent.ExecutionRepository, id agent.ExecutionID) error {
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
 
