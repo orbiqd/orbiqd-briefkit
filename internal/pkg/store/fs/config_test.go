@@ -104,6 +104,19 @@ func TestConfigRepository_Exists(t *testing.T) {
 	})
 }
 
+func TestConfigRepository_Update(t *testing.T) {
+	memFs := afero.NewMemMapFs()
+	basePath := "/tmp/test-agents"
+	repo, err := NewConfigRepository(basePath, memFs)
+	require.NoError(t, err)
+	ctx := context.Background()
+
+	t.Run("invalid id", func(t *testing.T) {
+		err := repo.Update(ctx, agent.AgentID("Invalid"), agent.Config{})
+		assert.ErrorIs(t, err, agent.ErrAgentIDInvalid)
+	})
+}
+
 func TestConfigRepository_Get(t *testing.T) {
 	memFs := afero.NewMemMapFs()
 	basePath := "/tmp/test-agents"
@@ -153,6 +166,7 @@ func TestConfigRepository_List(t *testing.T) {
 	}))
 	require.NoError(t, afero.WriteFile(memFs, filepath.Join(basePath, "readme.txt"), []byte("ignore"), 0644))
 	require.NoError(t, afero.WriteFile(memFs, filepath.Join(basePath, "Bad.yaml"), []byte("kind: codex"), 0644))
+	require.NoError(t, memFs.MkdirAll(filepath.Join(basePath, "subdir.yaml"), 0755))
 
 	ids, err = repo.List(ctx)
 	require.NoError(t, err)

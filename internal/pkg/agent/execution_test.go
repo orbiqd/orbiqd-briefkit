@@ -53,6 +53,47 @@ func TestExecutionInputAttachmentValidate(t *testing.T) {
 	})
 }
 
+func TestExecutionState_IsFinished(t *testing.T) {
+	tests := []struct {
+		name     string
+		state    ExecutionState
+		expected bool
+	}{
+		{
+			name:     "created is not finished",
+			state:    ExecutionCreated,
+			expected: false,
+		},
+		{
+			name:     "started is not finished",
+			state:    ExecutionStarted,
+			expected: false,
+		},
+		{
+			name:     "running is not finished",
+			state:    ExecutionRunning,
+			expected: false,
+		},
+		{
+			name:     "succeeded is finished",
+			state:    ExecutionSucceeded,
+			expected: true,
+		},
+		{
+			name:     "failed is finished",
+			state:    ExecutionFailed,
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.state.IsFinished()
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
+
 func TestExecutionInputValidate(t *testing.T) {
 	workingDir := t.TempDir()
 	valid := ExecutionInput{
