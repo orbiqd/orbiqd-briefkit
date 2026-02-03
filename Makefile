@@ -1,4 +1,4 @@
-.PHONY: build build-local build-release build-all lint lint-go lint-goreleaser test clean run-briefkit-runner debug-briefkit-mcp setup generate-mocks
+.PHONY: build build-local build-release build-all lint lint-go lint-goreleaser lint-codecov test clean run-briefkit-runner debug-briefkit-mcp setup generate-mocks
 
 # Local build (current platform via go build)
 build: build-local
@@ -17,13 +17,16 @@ build-release: lint
 build-all: build-release
 
 # Lint
-lint: lint-go lint-goreleaser
+lint: lint-go lint-goreleaser lint-codecov
 
 lint-go:
 	golangci-lint run --fix
 
 lint-goreleaser:
 	goreleaser check
+
+lint-codecov:
+	curl --fail --silent --show-error --data-binary @codecov.yml https://codecov.io/validate >/dev/null
 
 # Test
 test: lint generate-mocks

@@ -1,5 +1,3 @@
-//go:build !coverage
-
 package briefkit
 
 import (
