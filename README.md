@@ -6,13 +6,12 @@
 
 ## Overview
 
-BriefKit runs your local, subscription-based agent CLIs (no APIs or API keys). It ships as a single, self-contained
-CLI and an MCP server - no Python/JS - just a single binary without tons of dependencies. OrbiqD BriefKit runs **your
-existing agent CLIs** directly in your current working directory. Agents see your repository the same way you do, with
-no uploads and no remote context copying. BriefKit supports workflows where you want more than one LLM to collaborate
-in the same workspace.
+BriefKit runs your local, subscription-based agent CLIs (no APIs or API keys) directly in your working directory. It
+ships as a single, self-contained CLI and an MCP server, with no Python/JS and no extra runtimes. Agents see your
+repository the same way you do, with no uploads and no remote context copying. BriefKit supports workflows where more
+than one LLM collaborates in the same workspace.
 
-Current supported local agent CLIs is `claude`, `codex`, `gemini`.
+Currently supported local agent CLIs are `claude`, `codex`, `gemini`.
 
 ## Usage
 
