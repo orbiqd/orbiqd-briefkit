@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 	fsstore "github.com/orbiqd/orbiqd-briefkit/internal/pkg/store/fs"
+	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -41,7 +41,7 @@ func TestStateExecutionCreateCmd_Run_InvalidTimeout_ReturnsError(t *testing.T) {
 	require.NoError(t, err)
 	ctx := context.Background()
 
-	agentConfig := agent.Config{}
+	agentConfig := briefkit.Config{}
 	agentConfig.Runtime.Kind = "codex"
 	require.NoError(t, configRepo.Update(ctx, "codex", agentConfig))
 
@@ -66,7 +66,7 @@ func TestStateExecutionCreateCmd_Run_ValidInput_CreatesExecution(t *testing.T) {
 	require.NoError(t, err)
 	ctx := context.Background()
 
-	agentConfig := agent.Config{}
+	agentConfig := briefkit.Config{}
 	agentConfig.Runtime.Kind = "codex"
 	require.NoError(t, configRepo.Update(ctx, "codex", agentConfig))
 

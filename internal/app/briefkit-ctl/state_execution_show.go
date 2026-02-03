@@ -7,14 +7,14 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
+	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 )
 
 // ExecutionShowOutput captures the output payload for execution show.
 type ExecutionShowOutput struct {
-	Status agent.ExecutionStatus  `json:"status"`
-	Input  agent.ExecutionInput   `json:"input"`
-	Result *agent.ExecutionResult `json:"result,omitempty"`
+	Status briefkit.ExecutionStatus  `json:"status"`
+	Input  briefkit.ExecutionInput   `json:"input"`
+	Result *briefkit.ExecutionResult `json:"result,omitempty"`
 }
 
 // StateExecutionShowCmd shows details for a single execution.
@@ -23,8 +23,8 @@ type StateExecutionShowCmd struct {
 }
 
 // Run executes the execution show command.
-func (e *StateExecutionShowCmd) Run(ctx context.Context, repository agent.ExecutionRepository) error {
-	id := agent.ExecutionID(e.ID)
+func (e *StateExecutionShowCmd) Run(ctx context.Context, repository briefkit.ExecutionRepository) error {
+	id := briefkit.ExecutionID(e.ID)
 	if err := id.Validate(); err != nil {
 		return fmt.Errorf("validate execution id: %w", err)
 	}
@@ -44,10 +44,10 @@ func (e *StateExecutionShowCmd) Run(ctx context.Context, repository agent.Execut
 		return fmt.Errorf("load execution input: %w", err)
 	}
 
-	var result *agent.ExecutionResult
+	var result *briefkit.ExecutionResult
 	executionResult, err := execution.GetResult(ctx)
 	if err != nil {
-		if !errors.Is(err, agent.ErrExecutionNoResult) {
+		if !errors.Is(err, briefkit.ErrExecutionNoResult) {
 			return fmt.Errorf("load execution result: %w", err)
 		}
 	} else {

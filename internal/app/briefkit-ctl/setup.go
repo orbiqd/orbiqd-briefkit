@@ -8,12 +8,12 @@ import (
 	"maps"
 	"slices"
 
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/cli"
+	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 )
 
 type SetupCmd struct {
-	RuntimeKind []agent.RuntimeKind `help:"Limit setup to these runtime kinds. When empty, all kinds will be configured."`
+	RuntimeKind []briefkit.RuntimeKind `help:"Limit setup to these runtime kinds. When empty, all kinds will be configured."`
 
 	SetupAgentConfig bool `default:"true" help:"Configure agent runtime settings (default: true)"`
 	SetupAgentMCP    bool `default:"true" help:"Configure agent MCP server integration (default: true)"`
@@ -23,14 +23,14 @@ type SetupCmd struct {
 	Force bool `default:"false" help:"Allow overriding existing MCP server or agent configuration"`
 }
 
-func (command *SetupCmd) Run(ctx context.Context, runtimeRegistry agent.RuntimeRegistry, configRepository agent.ConfigRepository) error {
+func (command *SetupCmd) Run(ctx context.Context, runtimeRegistry briefkit.RuntimeRegistry, configRepository briefkit.ConfigRepository) error {
 	runtimes, err := command.detectRuntimes(ctx, runtimeRegistry)
 	if err != nil {
 		return fmt.Errorf("detect runtimes: %w", err)
 	}
 
 	if len(command.RuntimeKind) > 0 {
-		maps.DeleteFunc(runtimes, func(runtimeKind agent.RuntimeKind, _ agent.Runtime) bool {
+		maps.DeleteFunc(runtimes, func(runtimeKind briefkit.RuntimeKind, _ briefkit.Runtime) bool {
 			return !slices.Contains(command.RuntimeKind, runtimeKind)
 		})
 	}
@@ -45,13 +45,13 @@ func (command *SetupCmd) Run(ctx context.Context, runtimeRegistry agent.RuntimeR
 	return nil
 }
 
-func (command *SetupCmd) detectRuntimes(ctx context.Context, runtimeRegistry agent.RuntimeRegistry) (map[agent.RuntimeKind]agent.Runtime, error) {
+func (command *SetupCmd) detectRuntimes(ctx context.Context, runtimeRegistry briefkit.RuntimeRegistry) (map[briefkit.RuntimeKind]briefkit.Runtime, error) {
 	supportedRuntimes, err := runtimeRegistry.List(ctx)
 	if err != nil {
-		return map[agent.RuntimeKind]agent.Runtime{}, fmt.Errorf("list runtime: %w", err)
+		return map[briefkit.RuntimeKind]briefkit.Runtime{}, fmt.Errorf("list runtime: %w", err)
 	}
 
-	runtimes := map[agent.RuntimeKind]agent.Runtime{}
+	runtimes := map[briefkit.RuntimeKind]briefkit.Runtime{}
 
 	for _, runtimeKind := range supportedRuntimes {
 		logger := slog.With(slog.String("runtimeKind", string(runtimeKind)))
@@ -60,12 +60,12 @@ func (command *SetupCmd) detectRuntimes(ctx context.Context, runtimeRegistry age
 
 		runtime, err := runtimeRegistry.Get(ctx, runtimeKind)
 		if err != nil {
-			return map[agent.RuntimeKind]agent.Runtime{}, fmt.Errorf("get %s runtime: %w", runtimeKind, err)
+			return map[briefkit.RuntimeKind]briefkit.Runtime{}, fmt.Errorf("get %s runtime: %w", runtimeKind, err)
 		}
 
 		runtimeFound, err := runtime.Discovery(ctx)
 		if err != nil {
-			return map[agent.RuntimeKind]agent.Runtime{}, fmt.Errorf("discover %s runtime: %w", runtimeKind, err)
+			return map[briefkit.RuntimeKind]briefkit.Runtime{}, fmt.Errorf("discover %s runtime: %w", runtimeKind, err)
 		}
 
 		if !runtimeFound {
@@ -75,7 +75,7 @@ func (command *SetupCmd) detectRuntimes(ctx context.Context, runtimeRegistry age
 
 		runtimeInfo, err := runtime.GetInfo(ctx)
 		if err != nil {
-			return map[agent.RuntimeKind]agent.Runtime{}, fmt.Errorf("get %s runtime info: %w", runtimeKind, err)
+			return map[briefkit.RuntimeKind]briefkit.Runtime{}, fmt.Errorf("get %s runtime info: %w", runtimeKind, err)
 		}
 
 		logger.Info("Runtime found.", slog.String("runtimeVersion", runtimeInfo.Version))
@@ -86,7 +86,7 @@ func (command *SetupCmd) detectRuntimes(ctx context.Context, runtimeRegistry age
 	return runtimes, nil
 }
 
-func (command *SetupCmd) setupRuntime(ctx context.Context, runtimeKind agent.RuntimeKind, runtime agent.Runtime, configRepository agent.ConfigRepository) error {
+func (command *SetupCmd) setupRuntime(ctx context.Context, runtimeKind briefkit.RuntimeKind, runtime briefkit.Runtime, configRepository briefkit.ConfigRepository) error {
 	logger := slog.With(slog.String("runtimeKind", string(runtimeKind)))
 
 	if command.SetupAgentConfig {
@@ -99,7 +99,7 @@ func (command *SetupCmd) setupRuntime(ctx context.Context, runtimeKind agent.Run
 	}
 
 	if command.SetupAgentMCP {
-		if registrar, isRegistrar := runtime.(agent.RuntimeMCPRegistrar); isRegistrar {
+		if registrar, isRegistrar := runtime.(briefkit.RuntimeMCPRegistrar); isRegistrar {
 			err := command.setupRuntimeAgentMCP(ctx, runtimeKind, registrar)
 			if err != nil {
 				return fmt.Errorf("agent mcp: %w", err)
@@ -114,8 +114,8 @@ func (command *SetupCmd) setupRuntime(ctx context.Context, runtimeKind agent.Run
 	return nil
 }
 
-func (command *SetupCmd) setupRuntimeAgentConfig(ctx context.Context, runtimeKind agent.RuntimeKind, runtime agent.Runtime, configRepository agent.ConfigRepository) error {
-	agentId := agent.AgentID(runtimeKind)
+func (command *SetupCmd) setupRuntimeAgentConfig(ctx context.Context, runtimeKind briefkit.RuntimeKind, runtime briefkit.Runtime, configRepository briefkit.ConfigRepository) error {
+	agentId := briefkit.AgentID(runtimeKind)
 
 	logger := slog.With(slog.String("runtimeKind", string(runtimeKind)), slog.String("agentId", string(agentId)))
 
@@ -141,7 +141,7 @@ func (command *SetupCmd) setupRuntimeAgentConfig(ctx context.Context, runtimeKin
 		runtimeFeatures.EnableSandbox = command.EnableSandbox
 	}
 
-	config := agent.Config{}
+	config := briefkit.Config{}
 	config.Runtime.Kind = runtimeKind
 	config.Runtime.Config = runtimeConfig
 	config.Runtime.Feature = runtimeFeatures
@@ -164,8 +164,8 @@ func (command *SetupCmd) setupRuntimeAgentConfig(ctx context.Context, runtimeKin
 	return nil
 }
 
-func (command *SetupCmd) setupRuntimeAgentMCP(ctx context.Context, runtimeKind agent.RuntimeKind, registrar agent.RuntimeMCPRegistrar) error {
-	mcpServerName := agent.RuntimeMCPServerName("briefkit")
+func (command *SetupCmd) setupRuntimeAgentMCP(ctx context.Context, runtimeKind briefkit.RuntimeKind, registrar briefkit.RuntimeMCPRegistrar) error {
+	mcpServerName := briefkit.RuntimeMCPServerName("briefkit")
 
 	logger := slog.With(
 		slog.String("runtimeKind", string(runtimeKind)),
@@ -179,8 +179,8 @@ func (command *SetupCmd) setupRuntimeAgentMCP(ctx context.Context, runtimeKind a
 		return fmt.Errorf("resolve mcp-server executable: %w", err)
 	}
 
-	mcpServer := agent.RuntimeMCPServer{
-		STDIO: &agent.RuntimeSTDIOMCPServer{
+	mcpServer := briefkit.RuntimeMCPServer{
+		STDIO: &briefkit.RuntimeSTDIOMCPServer{
 			Command: executablePath,
 		},
 	}

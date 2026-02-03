@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 
 	"github.com/mitchellh/go-homedir"
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 	fsstore "github.com/orbiqd/orbiqd-briefkit/internal/pkg/store/fs"
+	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 	"github.com/spf13/afero"
 )
 
@@ -17,7 +17,7 @@ type StoreConfig struct {
 
 const executionRepositoryDirName = "executions"
 
-func CreateExecutionRepositoryFromConfig(config StoreConfig) (agent.ExecutionRepository, error) {
+func CreateExecutionRepositoryFromConfig(config StoreConfig) (briefkit.ExecutionRepository, error) {
 	expanded, err := homedir.Expand(config.StatePath)
 	if err != nil {
 		return nil, fmt.Errorf("expand state path: %w", err)
@@ -38,7 +38,7 @@ func CreateExecutionRepositoryFromConfig(config StoreConfig) (agent.ExecutionRep
 	return repository, nil
 }
 
-func CreateConfigRepositoryFromConfig(config StoreConfig) (agent.ConfigRepository, error) {
+func CreateConfigRepositoryFromConfig(config StoreConfig) (briefkit.ConfigRepository, error) {
 	expanded, err := homedir.Expand(config.AgentConfigPath)
 	if err != nil {
 		return nil, fmt.Errorf("expand agent config path: %w", err)

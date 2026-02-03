@@ -10,7 +10,7 @@ import (
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/neongreen/mono/lib/toml"
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
+	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -136,8 +136,8 @@ func TestRuntime_RegisterMCPServer_WhenSTDIOConfigMissing_ThenReturnsError(t *te
 	resetCodexMockEnv(t)
 	err := NewRuntime().RegisterMCPServer(
 		context.Background(),
-		agent.RuntimeMCPServerName("briefkit"),
-		agent.RuntimeMCPServer{},
+		briefkit.RuntimeMCPServerName("briefkit"),
+		briefkit.RuntimeMCPServer{},
 	)
 
 	require.Error(t, err)
@@ -148,9 +148,9 @@ func TestRuntime_RegisterMCPServer_WhenCommandMissing_ThenReturnsError(t *testin
 	resetCodexMockEnv(t)
 	err := NewRuntime().RegisterMCPServer(
 		context.Background(),
-		agent.RuntimeMCPServerName("briefkit"),
-		agent.RuntimeMCPServer{
-			STDIO: &agent.RuntimeSTDIOMCPServer{Command: "   "},
+		briefkit.RuntimeMCPServerName("briefkit"),
+		briefkit.RuntimeMCPServer{
+			STDIO: &briefkit.RuntimeSTDIOMCPServer{Command: "   "},
 		},
 	)
 
@@ -165,7 +165,7 @@ func TestRuntime_RegisterMCPServer_WhenRemoveNotFound_ThenReturnsNil(t *testing.
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".codex"), 0o750))
 	t.Setenv("MOCK_CODEX_MCP_NOT_FOUND", "1")
 
-	err := NewRuntime().RegisterMCPServer(context.Background(), agent.RuntimeMCPServerName("briefkit"), validMCPServer())
+	err := NewRuntime().RegisterMCPServer(context.Background(), briefkit.RuntimeMCPServerName("briefkit"), validMCPServer())
 
 	require.NoError(t, err)
 }
@@ -175,7 +175,7 @@ func TestRuntime_RegisterMCPServer_WhenRemoveFails_ThenReturnsError(t *testing.T
 	setCodexMockExecutable(t)
 	t.Setenv("MOCK_CODEX_MCP_REMOVE_FAIL", "1")
 
-	err := NewRuntime().RegisterMCPServer(context.Background(), agent.RuntimeMCPServerName("briefkit"), validMCPServer())
+	err := NewRuntime().RegisterMCPServer(context.Background(), briefkit.RuntimeMCPServerName("briefkit"), validMCPServer())
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "codex mcp server removal")
@@ -186,7 +186,7 @@ func TestRuntime_RegisterMCPServer_WhenAddFailsWithOutput_ThenReturnsError(t *te
 	setCodexMockExecutable(t)
 	t.Setenv("MOCK_CODEX_MCP_ADD_FAIL", "1")
 
-	err := NewRuntime().RegisterMCPServer(context.Background(), agent.RuntimeMCPServerName("briefkit"), validMCPServer())
+	err := NewRuntime().RegisterMCPServer(context.Background(), briefkit.RuntimeMCPServerName("briefkit"), validMCPServer())
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "codex mcp server registration")
@@ -199,7 +199,7 @@ func TestRuntime_RegisterMCPServer_WhenAddFailsWithoutOutput_ThenReturnsError(t 
 	t.Setenv("MOCK_CODEX_MCP_ADD_FAIL", "1")
 	t.Setenv("MOCK_CODEX_MCP_ADD_NO_OUTPUT", "1")
 
-	err := NewRuntime().RegisterMCPServer(context.Background(), agent.RuntimeMCPServerName("briefkit"), validMCPServer())
+	err := NewRuntime().RegisterMCPServer(context.Background(), briefkit.RuntimeMCPServerName("briefkit"), validMCPServer())
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "codex mcp server registration")
@@ -212,7 +212,7 @@ func TestRuntime_RegisterMCPServer_WhenAddSucceeds_ThenWritesTimeoutConfig(t *te
 	setCodexMockExecutable(t)
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".codex"), 0o750))
 
-	err := NewRuntime().RegisterMCPServer(context.Background(), agent.RuntimeMCPServerName("briefkit"), validMCPServer())
+	err := NewRuntime().RegisterMCPServer(context.Background(), briefkit.RuntimeMCPServerName("briefkit"), validMCPServer())
 
 	require.NoError(t, err)
 	assertConfigTimeout(t, afero.NewOsFs(), filepath.Join(home, ".codex", "config.toml"), `mcp_servers."briefkit".tool_timeout_sec`)
@@ -223,7 +223,7 @@ func TestRuntime_RegisterMCPServer_WhenContextCanceled_ThenReturnsError(t *testi
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	err := NewRuntime().RegisterMCPServer(ctx, agent.RuntimeMCPServerName("briefkit"), validMCPServer())
+	err := NewRuntime().RegisterMCPServer(ctx, briefkit.RuntimeMCPServerName("briefkit"), validMCPServer())
 
 	require.Error(t, err)
 	assert.ErrorIs(t, err, context.Canceled)
@@ -242,7 +242,7 @@ func TestRuntime_GetDefaultFeatures_WhenCalled_ThenReturnsEmptyFeatures(t *testi
 	features, err := NewRuntime().GetDefaultFeatures(context.Background())
 
 	require.NoError(t, err)
-	assert.Equal(t, agent.RuntimeFeatures{}, features)
+	assert.Equal(t, briefkit.RuntimeFeatures{}, features)
 }
 
 func TestRuntime_Execute_WhenValidConfig_ThenReturnsInstance(t *testing.T) {
@@ -250,13 +250,13 @@ func TestRuntime_Execute_WhenValidConfig_ThenReturnsInstance(t *testing.T) {
 	setCodexMockExecutable(t)
 	t.Setenv("BRIEFKIT_RUNTIME_LOG_DIR", t.TempDir())
 
-	config := agent.Config{}
+	config := briefkit.Config{}
 	config.Runtime.Config = RuntimeConfig{RequireWorkspaceRepository: false}
 
 	instance, err := NewRuntime().Execute(
 		context.Background(),
-		agent.ExecutionID("test-exec"),
-		agent.ExecutionInput{Prompt: "hello"},
+		briefkit.ExecutionID("test-exec"),
+		briefkit.ExecutionInput{Prompt: "hello"},
 		config,
 	)
 
@@ -276,13 +276,13 @@ func TestRuntime_Execute_WhenConfigAsMap_ThenReturnsInstance(t *testing.T) {
 	setCodexMockExecutable(t)
 	t.Setenv("BRIEFKIT_RUNTIME_LOG_DIR", t.TempDir())
 
-	config := agent.Config{}
+	config := briefkit.Config{}
 	config.Runtime.Config = map[string]any{"requireWorkspaceRepository": false}
 
 	instance, err := NewRuntime().Execute(
 		context.Background(),
-		agent.ExecutionID("test-exec"),
-		agent.ExecutionInput{Prompt: "hello"},
+		briefkit.ExecutionID("test-exec"),
+		briefkit.ExecutionInput{Prompt: "hello"},
 		config,
 	)
 
@@ -301,13 +301,13 @@ func TestRuntime_Execute_WhenConfigInvalid_ThenReturnsError(t *testing.T) {
 	setCodexMockExecutable(t)
 	t.Setenv("BRIEFKIT_RUNTIME_LOG_DIR", t.TempDir())
 
-	config := agent.Config{}
+	config := briefkit.Config{}
 	config.Runtime.Config = "invalid-not-a-struct"
 
 	_, err := NewRuntime().Execute(
 		context.Background(),
-		agent.ExecutionID("test-exec"),
-		agent.ExecutionInput{Prompt: "hello"},
+		briefkit.ExecutionID("test-exec"),
+		briefkit.ExecutionInput{Prompt: "hello"},
 		config,
 	)
 
@@ -323,13 +323,13 @@ func TestRuntime_Execute_WhenContextCanceled_ThenReturnsError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	config := agent.Config{}
+	config := briefkit.Config{}
 	config.Runtime.Config = RuntimeConfig{RequireWorkspaceRepository: false}
 
 	_, err := NewRuntime().Execute(
 		ctx,
-		agent.ExecutionID("test-exec"),
-		agent.ExecutionInput{Prompt: "hello"},
+		briefkit.ExecutionID("test-exec"),
+		briefkit.ExecutionInput{Prompt: "hello"},
 		config,
 	)
 
@@ -521,9 +521,9 @@ func readTomlDoc(t *testing.T, fs afero.Fs, configPath string) *toml.Document {
 	return doc
 }
 
-func validMCPServer() agent.RuntimeMCPServer {
-	return agent.RuntimeMCPServer{
-		STDIO: &agent.RuntimeSTDIOMCPServer{
+func validMCPServer() briefkit.RuntimeMCPServer {
+	return briefkit.RuntimeMCPServer{
+		STDIO: &briefkit.RuntimeSTDIOMCPServer{
 			Command:   "echo",
 			Arguments: []string{"hello"},
 		},

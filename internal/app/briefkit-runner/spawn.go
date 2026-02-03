@@ -6,11 +6,11 @@ import (
 	"os/exec"
 	"syscall"
 
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/cli"
+	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 )
 
-func Spawn(ctx context.Context, executionId agent.ExecutionID) error {
+func Spawn(ctx context.Context, executionId briefkit.ExecutionID) error {
 	executablePath, err := cli.ResolveExecutable(ctx, cli.ExecutableRunner)
 	if err != nil {
 		return fmt.Errorf("resolve executable: %w", err)

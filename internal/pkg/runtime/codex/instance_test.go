@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
+	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -18,7 +18,7 @@ func TestInstance_New_WhenContextCanceled_ThenReturnsError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	_, err := newInstance(ctx, agent.ExecutionID("exec-1"), agent.ExecutionInput{Prompt: "hello"}, RuntimeConfig{}, agent.RuntimeFeatures{}, t.TempDir())
+	_, err := newInstance(ctx, briefkit.ExecutionID("exec-1"), briefkit.ExecutionInput{Prompt: "hello"}, RuntimeConfig{}, briefkit.RuntimeFeatures{}, t.TempDir())
 
 	require.Error(t, err)
 	require.ErrorIs(t, err, context.Canceled)
@@ -28,9 +28,9 @@ func TestInstance_New_WhenWorkingDirectoryInvalid_ThenReturnsError(t *testing.T)
 	setupCodexMock(t)
 
 	workingDir := filepath.Join(t.TempDir(), "missing")
-	input := agent.ExecutionInput{Prompt: "hello", WorkingDirectory: &workingDir}
+	input := briefkit.ExecutionInput{Prompt: "hello", WorkingDirectory: &workingDir}
 
-	_, err := newInstance(context.Background(), agent.ExecutionID("exec-1"), input, RuntimeConfig{}, agent.RuntimeFeatures{}, t.TempDir())
+	_, err := newInstance(context.Background(), briefkit.ExecutionID("exec-1"), input, RuntimeConfig{}, briefkit.RuntimeFeatures{}, t.TempDir())
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "start codex")
@@ -41,10 +41,10 @@ func TestInstance_New_WhenWorkingDirectoryNil_ThenUsesCurrentDir(t *testing.T) {
 
 	instance, err := newInstance(
 		context.Background(),
-		agent.ExecutionID("exec-1"),
-		agent.ExecutionInput{Prompt: "test"},
+		briefkit.ExecutionID("exec-1"),
+		briefkit.ExecutionInput{Prompt: "test"},
 		RuntimeConfig{RequireWorkspaceRepository: false},
-		agent.RuntimeFeatures{},
+		briefkit.RuntimeFeatures{},
 		t.TempDir(),
 	)
 
@@ -63,10 +63,10 @@ func TestInstance_New_WhenWorkingDirectoryEmpty_ThenUsesCurrentDir(t *testing.T)
 	emptyDir := "   "
 	instance, err := newInstance(
 		context.Background(),
-		agent.ExecutionID("exec-1"),
-		agent.ExecutionInput{Prompt: "test", WorkingDirectory: &emptyDir},
+		briefkit.ExecutionID("exec-1"),
+		briefkit.ExecutionInput{Prompt: "test", WorkingDirectory: &emptyDir},
 		RuntimeConfig{RequireWorkspaceRepository: false},
-		agent.RuntimeFeatures{},
+		briefkit.RuntimeFeatures{},
 		t.TempDir(),
 	)
 
@@ -99,7 +99,7 @@ func TestInstance_Run_WhenParsingSucceedsUnderVariations_ThenReturnsResult(t *te
 				t.Setenv(key, value)
 			}
 
-			result, err := runInstance(t, agent.ExecutionInput{Prompt: "hello"})
+			result, err := runInstance(t, briefkit.ExecutionInput{Prompt: "hello"})
 
 			require.NoError(t, err)
 			assert.NotEmpty(t, result.ConversationID)
@@ -112,7 +112,7 @@ func TestInstance_Run_WhenOtherItemTypeThenAgentMessage_ThenUsesAgentMessage(t *
 	setupCodexMock(t)
 	t.Setenv("MOCK_CODEX_OTHER_ITEM_TYPE", "1")
 
-	result, err := runInstance(t, agent.ExecutionInput{Prompt: "hello"})
+	result, err := runInstance(t, briefkit.ExecutionInput{Prompt: "hello"})
 
 	require.NoError(t, err)
 	assert.Contains(t, result.Response, "Mock response to: hello")
@@ -122,7 +122,7 @@ func TestInstance_Run_WhenMultiItemCompleted_ThenLastWins(t *testing.T) {
 	setupCodexMock(t)
 	t.Setenv("MOCK_CODEX_MULTI_ITEM", "1")
 
-	result, err := runInstance(t, agent.ExecutionInput{Prompt: "hello"})
+	result, err := runInstance(t, briefkit.ExecutionInput{Prompt: "hello"})
 
 	require.NoError(t, err)
 	assert.Equal(t, "Second response", result.Response)
@@ -132,7 +132,7 @@ func TestInstance_Run_WhenEmptyText_ThenResponseEmpty(t *testing.T) {
 	setupCodexMock(t)
 	t.Setenv("MOCK_CODEX_EMPTY_TEXT", "1")
 
-	result, err := runInstance(t, agent.ExecutionInput{Prompt: "hello"})
+	result, err := runInstance(t, briefkit.ExecutionInput{Prompt: "hello"})
 
 	require.NoError(t, err)
 	assert.Empty(t, result.Response)
@@ -142,7 +142,7 @@ func TestInstance_Run_WhenNoItemCompleted_ThenResponseEmpty(t *testing.T) {
 	setupCodexMock(t)
 	t.Setenv("MOCK_CODEX_NO_RESULT", "1")
 
-	result, err := runInstance(t, agent.ExecutionInput{Prompt: "hello"})
+	result, err := runInstance(t, briefkit.ExecutionInput{Prompt: "hello"})
 
 	require.NoError(t, err)
 	assert.NotEmpty(t, result.ConversationID)
@@ -153,10 +153,10 @@ func TestInstance_Run_WhenNoThreadStarted_ThenConversationIDEmpty(t *testing.T) 
 	setupCodexMock(t)
 	t.Setenv("MOCK_CODEX_NO_THREAD_STARTED", "1")
 
-	result, err := runInstance(t, agent.ExecutionInput{Prompt: "hello"})
+	result, err := runInstance(t, briefkit.ExecutionInput{Prompt: "hello"})
 
 	require.NoError(t, err)
-	assert.Equal(t, agent.ConversationID(""), result.ConversationID)
+	assert.Equal(t, briefkit.ConversationID(""), result.ConversationID)
 	assert.Contains(t, result.Response, "hello")
 }
 
@@ -164,7 +164,7 @@ func TestInstance_Run_WhenEmptyStdinAllowed_ThenResponseUsesEmptyPrompt(t *testi
 	setupCodexMock(t)
 	t.Setenv("MOCK_CODEX_EMPTY_STDIN", "1")
 
-	result, err := runInstance(t, agent.ExecutionInput{Prompt: ""})
+	result, err := runInstance(t, briefkit.ExecutionInput{Prompt: ""})
 
 	require.NoError(t, err)
 	assert.Equal(t, "Mock response to: ", result.Response)
@@ -172,9 +172,9 @@ func TestInstance_Run_WhenEmptyStdinAllowed_ThenResponseUsesEmptyPrompt(t *testi
 
 func TestInstance_Run_WhenResumeConversation_ThenUsesSessionID(t *testing.T) {
 	setupCodexMock(t)
-	sessionID := agent.ConversationID("session-123")
+	sessionID := briefkit.ConversationID("session-123")
 
-	result, err := runInstance(t, agent.ExecutionInput{Prompt: "hello", ConversationID: &sessionID})
+	result, err := runInstance(t, briefkit.ExecutionInput{Prompt: "hello", ConversationID: &sessionID})
 
 	require.NoError(t, err)
 	assert.Equal(t, sessionID, result.ConversationID)
@@ -187,10 +187,10 @@ func TestInstance_Run_WhenProcessFailsWithStderr_ThenRuntimeErrorUsesStderr(t *t
 	t.Setenv("MOCK_CODEX_STDERR", "boom")
 	t.Setenv("MOCK_CODEX_EXIT_CODE", "7")
 
-	result, err := runInstance(t, agent.ExecutionInput{Prompt: "hello"})
+	result, err := runInstance(t, briefkit.ExecutionInput{Prompt: "hello"})
 
 	require.Error(t, err)
-	var runtimeErr *agent.RuntimeExecutionError
+	var runtimeErr *briefkit.RuntimeExecutionError
 	require.ErrorAs(t, err, &runtimeErr)
 	assert.Equal(t, "boom", runtimeErr.Message)
 	require.NotNil(t, runtimeErr.ExitCode)
@@ -202,10 +202,10 @@ func TestInstance_Run_WhenProcessFailsWithoutStderr_ThenRuntimeErrorUsesErr(t *t
 	setupCodexMock(t)
 	t.Setenv("MOCK_CODEX_FAIL", "1")
 
-	_, err := runInstance(t, agent.ExecutionInput{Prompt: "hello"})
+	_, err := runInstance(t, briefkit.ExecutionInput{Prompt: "hello"})
 
 	require.Error(t, err)
-	var runtimeErr *agent.RuntimeExecutionError
+	var runtimeErr *briefkit.RuntimeExecutionError
 	require.ErrorAs(t, err, &runtimeErr)
 	assert.Contains(t, runtimeErr.Message, "exit status")
 	require.NotNil(t, runtimeErr.ExitCode)
@@ -218,10 +218,10 @@ func TestInstance_Run_WhenPartialFail_ThenReturnsErrorAndResponseEmpty(t *testin
 	t.Setenv("MOCK_CODEX_STDERR", "partial failure")
 	t.Setenv("MOCK_CODEX_EXIT_CODE", "9")
 
-	result, err := runInstance(t, agent.ExecutionInput{Prompt: "hello"})
+	result, err := runInstance(t, briefkit.ExecutionInput{Prompt: "hello"})
 
 	require.Error(t, err)
-	var runtimeErr *agent.RuntimeExecutionError
+	var runtimeErr *briefkit.RuntimeExecutionError
 	require.ErrorAs(t, err, &runtimeErr)
 	assert.Equal(t, "partial failure", runtimeErr.Message)
 	require.NotNil(t, runtimeErr.ExitCode)
@@ -244,10 +244,10 @@ func TestInstance_Run_WhenSignalReceived_ThenExitCodeMatchesSignal(t *testing.T)
 			setupCodexMock(t)
 			t.Setenv("MOCK_CODEX_SIGNAL", tc.signal)
 
-			_, err := runInstance(t, agent.ExecutionInput{Prompt: "hello"})
+			_, err := runInstance(t, briefkit.ExecutionInput{Prompt: "hello"})
 
 			require.Error(t, err)
-			var runtimeErr *agent.RuntimeExecutionError
+			var runtimeErr *briefkit.RuntimeExecutionError
 			require.ErrorAs(t, err, &runtimeErr)
 			require.NotNil(t, runtimeErr.ExitCode)
 			assert.Contains(t, tc.expectedCodes, *runtimeErr.ExitCode)
@@ -258,25 +258,25 @@ func TestInstance_Run_WhenSignalReceived_ThenExitCodeMatchesSignal(t *testing.T)
 func TestInstance_Events_WhenStartedAndFinished_ThenEmitsRuntimeEvents(t *testing.T) {
 	setupCodexMock(t)
 
-	instance := newTestInstance(t, agent.ExecutionInput{Prompt: "hello"})
+	instance := newTestInstance(t, briefkit.ExecutionInput{Prompt: "hello"})
 	_, err := waitInstance(t, instance)
 
 	require.NoError(t, err)
 
-	var kinds []agent.RuntimeEventKind
+	var kinds []briefkit.RuntimeEventKind
 	for event := range instance.Events() {
 		kinds = append(kinds, event.Kind())
 	}
 
 	require.Len(t, kinds, 2)
-	assert.Equal(t, agent.RuntimeEventStarted, kinds[0])
-	assert.Equal(t, agent.RuntimeEventFinished, kinds[1])
+	assert.Equal(t, briefkit.RuntimeEventStarted, kinds[0])
+	assert.Equal(t, briefkit.RuntimeEventFinished, kinds[1])
 }
 
 func TestInstance_Wait_WhenContextCanceled_ThenReturnsContextError(t *testing.T) {
 	setupCodexMock(t)
 
-	instance := newTestInstance(t, agent.ExecutionInput{Prompt: "hello"})
+	instance := newTestInstance(t, briefkit.ExecutionInput{Prompt: "hello"})
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
@@ -292,16 +292,16 @@ func TestInstance_Wait_WhenContextCanceled_ThenReturnsContextError(t *testing.T)
 func TestInstance_EmitRuntimeEvent_WhenChannelNil_ThenReturnsEarly(t *testing.T) {
 	instance := &Instance{events: nil}
 
-	instance.emitRuntimeEvent(agent.RuntimeStartedEvent{})
+	instance.emitRuntimeEvent(briefkit.RuntimeStartedEvent{})
 }
 
 func TestInstance_EmitRuntimeEvent_WhenChannelFull_ThenDropsEvent(t *testing.T) {
 	instance := &Instance{
-		events: make(chan agent.RuntimeEvent, 1),
+		events: make(chan briefkit.RuntimeEvent, 1),
 	}
-	instance.events <- agent.RuntimeStartedEvent{}
+	instance.events <- briefkit.RuntimeStartedEvent{}
 
-	instance.emitRuntimeEvent(agent.RuntimeFinishedEvent{})
+	instance.emitRuntimeEvent(briefkit.RuntimeFinishedEvent{})
 
 	assert.Len(t, instance.events, 1)
 }
@@ -312,15 +312,15 @@ func setupCodexMock(t *testing.T) {
 	setCodexMockExecutable(t)
 }
 
-func newTestInstance(t *testing.T, input agent.ExecutionInput) *Instance {
+func newTestInstance(t *testing.T, input briefkit.ExecutionInput) *Instance {
 	t.Helper()
 
 	instance, err := newInstance(
 		context.Background(),
-		agent.ExecutionID("exec-1"),
+		briefkit.ExecutionID("exec-1"),
 		input,
 		RuntimeConfig{RequireWorkspaceRepository: false},
-		agent.RuntimeFeatures{},
+		briefkit.RuntimeFeatures{},
 		t.TempDir(),
 	)
 
@@ -328,7 +328,7 @@ func newTestInstance(t *testing.T, input agent.ExecutionInput) *Instance {
 	return instance
 }
 
-func waitInstance(t *testing.T, instance *Instance) (agent.RuntimeResult, error) {
+func waitInstance(t *testing.T, instance *Instance) (briefkit.RuntimeResult, error) {
 	t.Helper()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -337,7 +337,7 @@ func waitInstance(t *testing.T, instance *Instance) (agent.RuntimeResult, error)
 	return instance.Wait(ctx)
 }
 
-func runInstance(t *testing.T, input agent.ExecutionInput) (agent.RuntimeResult, error) {
+func runInstance(t *testing.T, input briefkit.ExecutionInput) (briefkit.RuntimeResult, error) {
 	t.Helper()
 
 	instance := newTestInstance(t, input)

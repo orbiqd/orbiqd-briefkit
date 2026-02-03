@@ -7,13 +7,13 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
+	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 )
 
 // ExecutionListOutputItem represents a single execution entry in the list output.
 type ExecutionListOutputItem struct {
-	Id     agent.ExecutionID     `json:"id"`
-	Status agent.ExecutionStatus `json:"status"`
+	Id     briefkit.ExecutionID     `json:"id"`
+	Status briefkit.ExecutionStatus `json:"status"`
 }
 
 // ExecutionListOutput captures the list output payload for executions.
@@ -25,7 +25,7 @@ type ExecutionListOutput struct {
 // StateExecutionListCmd lists stored executions and their status.
 type StateExecutionListCmd struct{}
 
-func (e *StateExecutionListCmd) Run(ctx context.Context, repository agent.ExecutionRepository) error {
+func (e *StateExecutionListCmd) Run(ctx context.Context, repository briefkit.ExecutionRepository) error {
 	ids, err := repository.Find(ctx)
 	if err != nil {
 		return fmt.Errorf("list executions: %w", err)

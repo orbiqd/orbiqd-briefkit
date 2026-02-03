@@ -3,8 +3,8 @@ package gemini
 import (
 	"testing"
 
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
+	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -111,7 +111,7 @@ func TestGeminiArguments_ApplyRuntimeConfig_WhenMarshalFails_ThenReturnsError(t 
 
 func TestGeminiArguments_ApplyRuntimeFeatures_WhenNil_ThenNoChange(t *testing.T) {
 	args := NewGeminiArguments()
-	features := agent.RuntimeFeatures{}
+	features := briefkit.RuntimeFeatures{}
 
 	err := args.ApplyRuntimeFeatures(features)
 
@@ -121,7 +121,7 @@ func TestGeminiArguments_ApplyRuntimeFeatures_WhenNil_ThenNoChange(t *testing.T)
 
 func TestGeminiArguments_ApplyRuntimeFeatures_WhenEnableSandboxTrue_ThenSetsSandbox(t *testing.T) {
 	args := NewGeminiArguments()
-	features := agent.RuntimeFeatures{
+	features := briefkit.RuntimeFeatures{
 		EnableSandbox: utils.ToPointer(true),
 	}
 
@@ -134,7 +134,7 @@ func TestGeminiArguments_ApplyRuntimeFeatures_WhenEnableSandboxTrue_ThenSetsSand
 
 func TestGeminiArguments_ApplyRuntimeFeatures_WhenEnableSandboxFalse_ThenSetsSandbox(t *testing.T) {
 	args := NewGeminiArguments()
-	features := agent.RuntimeFeatures{
+	features := briefkit.RuntimeFeatures{
 		EnableSandbox: utils.ToPointer(false),
 	}
 
@@ -147,7 +147,7 @@ func TestGeminiArguments_ApplyRuntimeFeatures_WhenEnableSandboxFalse_ThenSetsSan
 
 func TestGeminiArguments_ApplyExecutionInput_WhenModelNil_ThenNoChange(t *testing.T) {
 	args := NewGeminiArguments()
-	input := agent.ExecutionInput{
+	input := briefkit.ExecutionInput{
 		Model: nil,
 	}
 
@@ -160,7 +160,7 @@ func TestGeminiArguments_ApplyExecutionInput_WhenModelNil_ThenNoChange(t *testin
 func TestGeminiArguments_ApplyExecutionInput_WhenModelHasWhitespace_ThenTrimsAndSets(t *testing.T) {
 	args := NewGeminiArguments()
 	model := "  gemini-2.0-flash  "
-	input := agent.ExecutionInput{
+	input := briefkit.ExecutionInput{
 		Model: &model,
 	}
 
@@ -174,7 +174,7 @@ func TestGeminiArguments_ApplyExecutionInput_WhenModelHasWhitespace_ThenTrimsAnd
 func TestGeminiArguments_ApplyExecutionInput_WhenModelEmptyAfterTrim_ThenReturnsError(t *testing.T) {
 	args := NewGeminiArguments()
 	model := "   "
-	input := agent.ExecutionInput{
+	input := briefkit.ExecutionInput{
 		Model: &model,
 	}
 
@@ -187,7 +187,7 @@ func TestGeminiArguments_ApplyExecutionInput_WhenModelEmptyAfterTrim_ThenReturns
 
 func TestGeminiArguments_ApplyExecutionInput_WhenConversationIDNil_ThenNoChange(t *testing.T) {
 	args := NewGeminiArguments()
-	input := agent.ExecutionInput{
+	input := briefkit.ExecutionInput{
 		ConversationID: nil,
 	}
 
@@ -199,8 +199,8 @@ func TestGeminiArguments_ApplyExecutionInput_WhenConversationIDNil_ThenNoChange(
 
 func TestGeminiArguments_ApplyExecutionInput_WhenConversationIDProvided_ThenSetsResume(t *testing.T) {
 	args := NewGeminiArguments()
-	conversationID := agent.ConversationID("session-abc-123")
-	input := agent.ExecutionInput{
+	conversationID := briefkit.ConversationID("session-abc-123")
+	input := briefkit.ExecutionInput{
 		ConversationID: &conversationID,
 	}
 
@@ -213,8 +213,8 @@ func TestGeminiArguments_ApplyExecutionInput_WhenConversationIDProvided_ThenSets
 
 func TestGeminiArguments_ApplyExecutionInput_WhenConversationIDHasWhitespace_ThenTrimsAndSets(t *testing.T) {
 	args := NewGeminiArguments()
-	conversationID := agent.ConversationID("  session-xyz  ")
-	input := agent.ExecutionInput{
+	conversationID := briefkit.ConversationID("  session-xyz  ")
+	input := briefkit.ExecutionInput{
 		ConversationID: &conversationID,
 	}
 
@@ -227,8 +227,8 @@ func TestGeminiArguments_ApplyExecutionInput_WhenConversationIDHasWhitespace_The
 
 func TestGeminiArguments_ApplyExecutionInput_WhenConversationIDEmptyAfterTrim_ThenReturnsError(t *testing.T) {
 	args := NewGeminiArguments()
-	conversationID := agent.ConversationID("   ")
-	input := agent.ExecutionInput{
+	conversationID := briefkit.ConversationID("   ")
+	input := briefkit.ExecutionInput{
 		ConversationID: &conversationID,
 	}
 
@@ -242,8 +242,8 @@ func TestGeminiArguments_ApplyExecutionInput_WhenConversationIDEmptyAfterTrim_Th
 func TestGeminiArguments_ApplyExecutionInput_WhenBothModelAndConversationID_ThenSetsBoth(t *testing.T) {
 	args := NewGeminiArguments()
 	model := "gemini-2.0-flash"
-	conversationID := agent.ConversationID("session-123")
-	input := agent.ExecutionInput{
+	conversationID := briefkit.ConversationID("session-123")
+	input := briefkit.ExecutionInput{
 		Model:          &model,
 		ConversationID: &conversationID,
 	}

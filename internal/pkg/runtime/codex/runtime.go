@@ -13,15 +13,15 @@ import (
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/neongreen/mono/lib/toml"
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/cli"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
+	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 	"github.com/spf13/afero"
 )
 
 var semverPattern = regexp.MustCompile(`\d+\.\d+\.\d+`)
 
-const Codex = agent.RuntimeKind("codex")
+const Codex = briefkit.RuntimeKind("codex")
 const defaultCodexConfigPath = "~/.codex/config.toml"
 const codexDefaultToolTimeout = 10 * time.Minute
 
@@ -38,7 +38,7 @@ func NewRuntime() *Runtime {
 	return &Runtime{}
 }
 
-func (runtime *Runtime) Execute(ctx context.Context, executionId agent.ExecutionID, executionInput agent.ExecutionInput, agentConfig agent.Config) (agent.RuntimeInstance, error) {
+func (runtime *Runtime) Execute(ctx context.Context, executionId briefkit.ExecutionID, executionInput briefkit.ExecutionInput, agentConfig briefkit.Config) (briefkit.RuntimeInstance, error) {
 	logDir, err := cli.ResolveRuntimeLogDir()
 	if err != nil {
 		return nil, err
@@ -73,41 +73,41 @@ func (runtime *Runtime) Discovery(ctx context.Context) (bool, error) {
 	return false, err
 }
 
-func (runtime *Runtime) GetDefaultConfig(ctx context.Context) (agent.RuntimeConfig, error) {
+func (runtime *Runtime) GetDefaultConfig(ctx context.Context) (briefkit.RuntimeConfig, error) {
 	return RuntimeConfig{
 		RequireWorkspaceRepository: false,
 	}, nil
 }
 
-func (runtime *Runtime) GetDefaultFeatures(ctx context.Context) (agent.RuntimeFeatures, error) {
-	return agent.RuntimeFeatures{}, nil
+func (runtime *Runtime) GetDefaultFeatures(ctx context.Context) (briefkit.RuntimeFeatures, error) {
+	return briefkit.RuntimeFeatures{}, nil
 }
 
-func (runtime *Runtime) GetInfo(ctx context.Context) (agent.RuntimeInfo, error) {
+func (runtime *Runtime) GetInfo(ctx context.Context) (briefkit.RuntimeInfo, error) {
 	if err := ctx.Err(); err != nil {
-		return agent.RuntimeInfo{}, err
+		return briefkit.RuntimeInfo{}, err
 	}
 
 	path, err := locateExecutable(ctx)
 	if err != nil {
-		return agent.RuntimeInfo{}, err
+		return briefkit.RuntimeInfo{}, err
 	}
 
 	// #nosec G204 - path comes from LookupExecutable with hardcoded name
 	output, err := exec.CommandContext(ctx, path, "--version").CombinedOutput()
 	if err != nil {
-		return agent.RuntimeInfo{}, fmt.Errorf("read codex version: %w", err)
+		return briefkit.RuntimeInfo{}, fmt.Errorf("read codex version: %w", err)
 	}
 
 	version := semverPattern.FindString(string(output))
 	if version == "" {
-		return agent.RuntimeInfo{}, fmt.Errorf("parse codex version from output: %s", strings.TrimSpace(string(output)))
+		return briefkit.RuntimeInfo{}, fmt.Errorf("parse codex version from output: %s", strings.TrimSpace(string(output)))
 	}
 
-	return agent.RuntimeInfo{Version: version}, nil
+	return briefkit.RuntimeInfo{Version: version}, nil
 }
 
-func (runtime *Runtime) RegisterMCPServer(ctx context.Context, serverName agent.RuntimeMCPServerName, server agent.RuntimeMCPServer) error {
+func (runtime *Runtime) RegisterMCPServer(ctx context.Context, serverName briefkit.RuntimeMCPServerName, server briefkit.RuntimeMCPServer) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}

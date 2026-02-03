@@ -25,3 +25,7 @@ linters:
 formatters:
   enable:
     - gofmt
+
+issues:
+  exclude-files:
+    - ".*_mock\\.go$"

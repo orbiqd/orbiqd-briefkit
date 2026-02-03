@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/mcuadros/go-defaults"
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
+	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 )
 
 // RuntimeConfig defines runtime options for Gemini execution.
@@ -62,7 +62,7 @@ func (arguments *GeminiArguments) ToSlice() []string {
 
 // ApplyRuntimeConfig applies gemini-specific runtime configuration to arguments.
 // Handles type conversion from the opaque RuntimeConfig interface.
-func (arguments *GeminiArguments) ApplyRuntimeConfig(config agent.RuntimeConfig) error {
+func (arguments *GeminiArguments) ApplyRuntimeConfig(config briefkit.RuntimeConfig) error {
 	var geminiConfig RuntimeConfig
 
 	switch typed := config.(type) {
@@ -91,7 +91,7 @@ func (arguments *GeminiArguments) ApplyRuntimeConfig(config agent.RuntimeConfig)
 }
 
 // ApplyRuntimeFeatures applies runtime feature flags to gemini arguments.
-func (arguments *GeminiArguments) ApplyRuntimeFeatures(features agent.RuntimeFeatures) error {
+func (arguments *GeminiArguments) ApplyRuntimeFeatures(features briefkit.RuntimeFeatures) error {
 	if features.EnableSandbox == nil {
 		return nil
 	}
@@ -102,7 +102,7 @@ func (arguments *GeminiArguments) ApplyRuntimeFeatures(features agent.RuntimeFea
 
 // ApplyExecutionInput applies execution-specific inputs like model selection.
 // Returns error if model or conversationID value is provided but empty.
-func (arguments *GeminiArguments) ApplyExecutionInput(executionInput agent.ExecutionInput) error {
+func (arguments *GeminiArguments) ApplyExecutionInput(executionInput briefkit.ExecutionInput) error {
 	if executionInput.Model != nil {
 		modelValue := strings.TrimSpace(*executionInput.Model)
 		if modelValue == "" {

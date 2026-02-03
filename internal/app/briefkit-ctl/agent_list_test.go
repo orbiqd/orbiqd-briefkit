@@ -8,8 +8,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 	fsstore "github.com/orbiqd/orbiqd-briefkit/internal/pkg/store/fs"
+	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -39,11 +39,11 @@ func TestAgentListCmd_Run_WithAgents_ReturnsAgentList(t *testing.T) {
 	require.NoError(t, err)
 	ctx := context.Background()
 
-	config1 := agent.Config{}
+	config1 := briefkit.Config{}
 	config1.Runtime.Kind = "claude"
 	require.NoError(t, repo.Update(ctx, "claude", config1))
 
-	config2 := agent.Config{}
+	config2 := briefkit.Config{}
 	config2.Runtime.Kind = "codex"
 	require.NoError(t, repo.Update(ctx, "codex", config2))
 
@@ -58,10 +58,10 @@ func TestAgentListCmd_Run_WithAgents_ReturnsAgentList(t *testing.T) {
 	require.NoError(t, json.Unmarshal(output, &result))
 	assert.Len(t, result.Items, 2)
 	assert.Equal(t, 2, result.Count)
-	assert.Equal(t, agent.AgentID("claude"), result.Items[0].ID)
-	assert.Equal(t, agent.RuntimeKind("claude"), result.Items[0].RuntimeKind)
-	assert.Equal(t, agent.AgentID("codex"), result.Items[1].ID)
-	assert.Equal(t, agent.RuntimeKind("codex"), result.Items[1].RuntimeKind)
+	assert.Equal(t, briefkit.AgentID("claude"), result.Items[0].ID)
+	assert.Equal(t, briefkit.RuntimeKind("claude"), result.Items[0].RuntimeKind)
+	assert.Equal(t, briefkit.AgentID("codex"), result.Items[1].ID)
+	assert.Equal(t, briefkit.RuntimeKind("codex"), result.Items[1].RuntimeKind)
 }
 
 func captureStdout(t *testing.T, fn func()) []byte {

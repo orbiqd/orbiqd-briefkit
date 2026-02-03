@@ -7,13 +7,13 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
+	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 )
 
 // AgentListOutputItem represents a single agent entry in the list output.
 type AgentListOutputItem struct {
-	ID          agent.AgentID     `json:"id"`
-	RuntimeKind agent.RuntimeKind `json:"runtimeKind"`
+	ID          briefkit.AgentID     `json:"id"`
+	RuntimeKind briefkit.RuntimeKind `json:"runtimeKind"`
 }
 
 // AgentListOutput captures the list output payload for agents.
@@ -26,7 +26,7 @@ type AgentListOutput struct {
 type AgentListCmd struct{}
 
 // Run executes the agent list command.
-func (a *AgentListCmd) Run(ctx context.Context, repository agent.ConfigRepository) error {
+func (a *AgentListCmd) Run(ctx context.Context, repository briefkit.ConfigRepository) error {
 	ids, err := repository.List(ctx)
 	if err != nil {
 		return fmt.Errorf("list agents: %w", err)

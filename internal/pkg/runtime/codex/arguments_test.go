@@ -3,8 +3,8 @@ package codex
 import (
 	"testing"
 
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
+	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -100,7 +100,7 @@ func TestCodexArguments_ApplyRuntimeConfig_WhenNilOrNilPointer_ThenKeepsDefaults
 
 	tests := []struct {
 		name   string
-		config agent.RuntimeConfig
+		config briefkit.RuntimeConfig
 	}{
 		{
 			name:   "nil config",
@@ -186,7 +186,7 @@ func TestCodexArguments_ApplyRuntimeConfig_WhenMapMissingRequiredKey_ThenApplies
 
 func TestCodexArguments_ApplyRuntimeFeatures_WhenConfigOverridesNil_ThenKeepsNil(t *testing.T) {
 	args := &CodexArguments{}
-	features := agent.RuntimeFeatures{}
+	features := briefkit.RuntimeFeatures{}
 
 	err := args.ApplyRuntimeFeatures(features)
 
@@ -200,7 +200,7 @@ func TestCodexArguments_ApplyRuntimeFeatures_WhenFeaturesNil_ThenKeepsExistingOv
 			"existing": "value",
 		},
 	}
-	features := agent.RuntimeFeatures{}
+	features := briefkit.RuntimeFeatures{}
 
 	err := args.ApplyRuntimeFeatures(features)
 
@@ -212,7 +212,7 @@ func TestCodexArguments_ApplyRuntimeFeatures_WhenFeaturesNil_ThenKeepsExistingOv
 
 func TestCodexArguments_ApplyRuntimeFeatures_WhenEnableSandboxTrue_ThenSetsSandboxMode(t *testing.T) {
 	args := &CodexArguments{}
-	features := agent.RuntimeFeatures{
+	features := briefkit.RuntimeFeatures{
 		EnableSandbox: utils.ToPointer(true),
 	}
 
@@ -227,7 +227,7 @@ func TestCodexArguments_ApplyRuntimeFeatures_WhenEnableSandboxFalse_ThenSetsSand
 	args := &CodexArguments{
 		SandboxMode: utils.ToPointer("workspace-write"),
 	}
-	features := agent.RuntimeFeatures{
+	features := briefkit.RuntimeFeatures{
 		EnableSandbox: utils.ToPointer(false),
 	}
 
@@ -240,7 +240,7 @@ func TestCodexArguments_ApplyRuntimeFeatures_WhenEnableSandboxFalse_ThenSetsSand
 
 func TestCodexArguments_ApplyExecutionInput_WhenModelNil_ThenNoChange(t *testing.T) {
 	args := NewCodexArguments()
-	input := agent.ExecutionInput{
+	input := briefkit.ExecutionInput{
 		Model: nil,
 	}
 
@@ -253,7 +253,7 @@ func TestCodexArguments_ApplyExecutionInput_WhenModelNil_ThenNoChange(t *testing
 func TestCodexArguments_ApplyExecutionInput_WhenModelHasWhitespace_ThenTrimsAndSets(t *testing.T) {
 	args := NewCodexArguments()
 	model := "  gpt-4  "
-	input := agent.ExecutionInput{
+	input := briefkit.ExecutionInput{
 		Model: &model,
 	}
 
@@ -267,7 +267,7 @@ func TestCodexArguments_ApplyExecutionInput_WhenModelHasWhitespace_ThenTrimsAndS
 func TestCodexArguments_ApplyExecutionInput_WhenModelEmptyAfterTrim_ThenReturnsError(t *testing.T) {
 	args := NewCodexArguments()
 	model := "   "
-	input := agent.ExecutionInput{
+	input := briefkit.ExecutionInput{
 		Model: &model,
 	}
 

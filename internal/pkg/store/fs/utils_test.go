@@ -3,7 +3,7 @@ package fs
 import (
 	"testing"
 
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
+	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -112,7 +112,7 @@ func TestReadJSON_FileNotExists_ReturnsErrExecutionNotFound(t *testing.T) {
 	_, err := readJSON[testData](fs, filePath)
 
 	require.Error(t, err)
-	assert.ErrorIs(t, err, agent.ErrExecutionNotFound)
+	assert.ErrorIs(t, err, briefkit.ErrExecutionNotFound)
 }
 
 func TestReadJSON_InvalidJSON_ReturnsError(t *testing.T) {
@@ -151,7 +151,7 @@ func TestReadYAML_FileNotExists_ReturnsErrAgentConfigNotFound(t *testing.T) {
 	_, err := readYAML[testData](fs, filePath)
 
 	require.Error(t, err)
-	assert.ErrorIs(t, err, agent.ErrAgentConfigNotFound)
+	assert.ErrorIs(t, err, briefkit.ErrAgentConfigNotFound)
 }
 
 func TestReadYAML_InvalidYAML_ReturnsError(t *testing.T) {

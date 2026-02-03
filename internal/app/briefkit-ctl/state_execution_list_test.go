@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 	fsstore "github.com/orbiqd/orbiqd-briefkit/internal/pkg/store/fs"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
+	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -38,10 +38,10 @@ func TestStateExecutionListCmd_Run_WithExecutions_ReturnsExecutionList(t *testin
 	require.NoError(t, err)
 	ctx := context.Background()
 
-	agentConfig := agent.Config{}
+	agentConfig := briefkit.Config{}
 	agentConfig.Runtime.Kind = "codex"
 
-	input := agent.ExecutionInput{
+	input := briefkit.ExecutionInput{
 		Prompt:  "test prompt",
 		Timeout: utils.Duration(5 * time.Minute),
 	}
@@ -64,9 +64,9 @@ func TestStateExecutionListCmd_Run_WithExecutions_ReturnsExecutionList(t *testin
 	assert.Len(t, result.Items, 2)
 	assert.Equal(t, 2, result.Count)
 
-	ids := []agent.ExecutionID{result.Items[0].Id, result.Items[1].Id}
+	ids := []briefkit.ExecutionID{result.Items[0].Id, result.Items[1].Id}
 	assert.Contains(t, ids, id1)
 	assert.Contains(t, ids, id2)
-	assert.Equal(t, agent.ExecutionCreated, result.Items[0].Status.State)
-	assert.Equal(t, agent.ExecutionCreated, result.Items[1].Status.State)
+	assert.Equal(t, briefkit.ExecutionCreated, result.Items[0].Status.State)
+	assert.Equal(t, briefkit.ExecutionCreated, result.Items[1].Status.State)
 }

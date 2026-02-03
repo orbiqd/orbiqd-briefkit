@@ -1,9 +1,9 @@
-.PHONY: build build-local build-release build-all lint lint-go lint-goreleaser test clean run-briefkit-runner debug-briefkit-mcp setup
+.PHONY: build build-local build-release build-all lint lint-go lint-goreleaser test clean run-briefkit-runner debug-briefkit-mcp setup generate-mocks
 
 # Local build (current platform via go build)
 build: build-local
 
-build-local: lint-go
+build-local: lint-go generate-mocks
 	mkdir -p bin
 	go build -o bin/briefkit-ctl ./cmd/briefkit-ctl
 	go build -o bin/briefkit-mcp ./cmd/briefkit-mcp
@@ -26,8 +26,12 @@ lint-goreleaser:
 	goreleaser check
 
 # Test
-test: lint
-	go test -coverprofile=coverage.out ./...
+test: lint generate-mocks
+	go test -tags=coverage -coverprofile=coverage.out ./...
+
+# Generate mocks
+generate-mocks:
+	mockery
 
 # Run targets
 run-briefkit-runner: build-local

@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 	fsstore "github.com/orbiqd/orbiqd-briefkit/internal/pkg/store/fs"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
+	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -48,10 +48,10 @@ func TestStateExecutionShowCmd_Run_ExistingExecution_ReturnsDetails(t *testing.T
 	require.NoError(t, err)
 	ctx := context.Background()
 
-	agentConfig := agent.Config{}
+	agentConfig := briefkit.Config{}
 	agentConfig.Runtime.Kind = "codex"
 
-	input := agent.ExecutionInput{
+	input := briefkit.ExecutionInput{
 		Prompt:  "test prompt",
 		Timeout: utils.Duration(5 * time.Minute),
 	}
@@ -68,7 +68,7 @@ func TestStateExecutionShowCmd_Run_ExistingExecution_ReturnsDetails(t *testing.T
 	require.NoError(t, err)
 	var result ExecutionShowOutput
 	require.NoError(t, json.Unmarshal(output, &result))
-	assert.Equal(t, agent.ExecutionCreated, result.Status.State)
+	assert.Equal(t, briefkit.ExecutionCreated, result.Status.State)
 	assert.Equal(t, "test prompt", result.Input.Prompt)
 	assert.Nil(t, result.Result)
 }
@@ -79,10 +79,10 @@ func TestStateExecutionShowCmd_Run_ExecutionWithResult_ReturnsResult(t *testing.
 	require.NoError(t, err)
 	ctx := context.Background()
 
-	agentConfig := agent.Config{}
+	agentConfig := briefkit.Config{}
 	agentConfig.Runtime.Kind = "codex"
 
-	input := agent.ExecutionInput{
+	input := briefkit.ExecutionInput{
 		Prompt:  "test prompt",
 		Timeout: utils.Duration(5 * time.Minute),
 	}
@@ -93,7 +93,7 @@ func TestStateExecutionShowCmd_Run_ExecutionWithResult_ReturnsResult(t *testing.
 	execution, err := repo.Get(ctx, id)
 	require.NoError(t, err)
 
-	result := agent.ExecutionResult{
+	result := briefkit.ExecutionResult{
 		Response:       "test response",
 		ConversationID: "conv-123",
 	}
@@ -108,8 +108,8 @@ func TestStateExecutionShowCmd_Run_ExecutionWithResult_ReturnsResult(t *testing.
 	require.NoError(t, err)
 	var showOutput ExecutionShowOutput
 	require.NoError(t, json.Unmarshal(output, &showOutput))
-	assert.Equal(t, agent.ExecutionSucceeded, showOutput.Status.State)
+	assert.Equal(t, briefkit.ExecutionSucceeded, showOutput.Status.State)
 	require.NotNil(t, showOutput.Result)
 	assert.Equal(t, "test response", showOutput.Result.Response)
-	assert.Equal(t, agent.ConversationID("conv-123"), showOutput.Result.ConversationID)
+	assert.Equal(t, briefkit.ConversationID("conv-123"), showOutput.Result.ConversationID)
 }

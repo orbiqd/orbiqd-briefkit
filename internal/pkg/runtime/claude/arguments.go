@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/mcuadros/go-defaults"
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
+	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 )
 
 type ClaudeArguments struct {
@@ -71,7 +71,7 @@ func (arguments *ClaudeArguments) ToSlice() []string {
 	return list
 }
 
-func (arguments *ClaudeArguments) ApplyRuntimeConfig(config agent.RuntimeConfig) error {
+func (arguments *ClaudeArguments) ApplyRuntimeConfig(config briefkit.RuntimeConfig) error {
 	var claudeConfig RuntimeConfig
 
 	switch typed := config.(type) {
@@ -99,7 +99,7 @@ func (arguments *ClaudeArguments) ApplyRuntimeConfig(config agent.RuntimeConfig)
 	return nil
 }
 
-func (arguments *ClaudeArguments) ApplyRuntimeFeatures(features agent.RuntimeFeatures) error {
+func (arguments *ClaudeArguments) ApplyRuntimeFeatures(features briefkit.RuntimeFeatures) error {
 	if features.EnableSandbox == nil {
 		return nil
 	}
@@ -116,7 +116,7 @@ func (arguments *ClaudeArguments) ApplyRuntimeFeatures(features agent.RuntimeFea
 	return nil
 }
 
-func (arguments *ClaudeArguments) ApplyExecutionInput(executionInput agent.ExecutionInput) error {
+func (arguments *ClaudeArguments) ApplyExecutionInput(executionInput briefkit.ExecutionInput) error {
 	if executionInput.Model != nil {
 		arguments.Model = executionInput.Model
 	}

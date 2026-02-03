@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/runtime/claude"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/runtime/codex"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/runtime/gemini"
@@ -48,13 +48,13 @@ func TestRegistry_Get_WhenKindUnknown_ThenReturnsErrRuntimeNotFound(t *testing.T
 	// Arrange.
 	registry := NewRegistry()
 	ctx := context.Background()
-	kind := agent.RuntimeKind("unknown")
+	kind := briefkit.RuntimeKind("unknown")
 
 	// Act.
 	runtime, err := registry.Get(ctx, kind)
 
 	// Assert.
-	require.ErrorIs(t, err, agent.ErrRuntimeNotFound)
+	require.ErrorIs(t, err, briefkit.ErrRuntimeNotFound)
 	assert.Nil(t, runtime)
 }
 
@@ -78,7 +78,7 @@ func TestRegistry_List_WhenCalled_ThenReturnsSortedKinds(t *testing.T) {
 	// Arrange.
 	registry := NewRegistry()
 	ctx := context.Background()
-	expected := []agent.RuntimeKind{claude.Claude, codex.Codex, gemini.Gemini}
+	expected := []briefkit.RuntimeKind{claude.Claude, codex.Codex, gemini.Gemini}
 
 	// Act.
 	kinds, err := registry.List(ctx)

@@ -8,17 +8,17 @@ import (
 	"time"
 
 	"github.com/alecthomas/kong"
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/cli"
+	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 )
 
 type RunnerCommand struct {
 	Log   cli.LogConfig   `embed:"" prefix:"log-"`
 	Store cli.StoreConfig `embed:"" prefix:"store-"`
 
-	ExecutionID agent.ExecutionID `arg:"" required:"" help:"Execution ID to run."`
-	Retry       bool              `help:"Allow rerunning finished executions."`
-	Version     VersionFlag       `name:"version" help:"Print version information."`
+	ExecutionID briefkit.ExecutionID `arg:"" required:"" help:"Execution ID to run."`
+	Retry       bool                 `help:"Allow rerunning finished executions."`
+	Version     VersionFlag          `name:"version" help:"Print version information."`
 }
 
 type VersionFlag bool
@@ -29,7 +29,7 @@ func (v VersionFlag) BeforeApply(app *kong.Kong) error {
 	return nil
 }
 
-func (command *RunnerCommand) Run(ctx context.Context, executionRepository agent.ExecutionRepository, runtimeRegistry agent.RuntimeRegistry) error {
+func (command *RunnerCommand) Run(ctx context.Context, executionRepository briefkit.ExecutionRepository, runtimeRegistry briefkit.RuntimeRegistry) error {
 	slog.Info("Starting BriefKIT agent runner.", slog.String("executionID", string(command.ExecutionID)))
 
 	execution, err := executionRepository.Get(ctx, command.ExecutionID)
@@ -49,12 +49,12 @@ func (command *RunnerCommand) Run(ctx context.Context, executionRepository agent
 	}
 	slog.Debug("Got execution status.", slog.String("executionID", string(command.ExecutionID)), slog.String("executionState", string(executionStatus.State)))
 
-	if executionStatus.State != agent.ExecutionCreated {
+	if executionStatus.State != briefkit.ExecutionCreated {
 		if !command.Retry {
 			return fmt.Errorf("execution state is %s", executionStatus.State)
 		}
 
-		if executionStatus.State != agent.ExecutionFailed && executionStatus.State != agent.ExecutionSucceeded {
+		if executionStatus.State != briefkit.ExecutionFailed && executionStatus.State != briefkit.ExecutionSucceeded {
 			return errors.New("execution state must be created, failed, or succeeded to retry")
 		}
 
@@ -76,7 +76,7 @@ func (command *RunnerCommand) Run(ctx context.Context, executionRepository agent
 	runCtx, cancel := context.WithTimeout(ctx, time.Duration(executionInput.Timeout))
 	defer cancel()
 
-	executionStatus.State = agent.ExecutionStarted
+	executionStatus.State = briefkit.ExecutionStarted
 	executionStatus.Attempts++
 	executionStatus.Error = nil
 	executionStatus.ExitCode = nil
@@ -92,7 +92,7 @@ func (command *RunnerCommand) Run(ctx context.Context, executionRepository agent
 		return fmt.Errorf("execute runtime: %w", err)
 	}
 
-	executionStatus.State = agent.ExecutionRunning
+	executionStatus.State = briefkit.ExecutionRunning
 	if err := execution.UpdateStatus(ctx, executionStatus); err != nil {
 		return fmt.Errorf("update execution status: %w", err)
 	}
@@ -109,7 +109,7 @@ func (command *RunnerCommand) Run(ctx context.Context, executionRepository agent
 		return fmt.Errorf("wait for runtime: %w", err)
 	}
 
-	executionResult := agent.ExecutionResult{
+	executionResult := briefkit.ExecutionResult{
 		Response:       result.Response,
 		ConversationID: result.ConversationID,
 	}
@@ -122,16 +122,16 @@ func (command *RunnerCommand) Run(ctx context.Context, executionRepository agent
 	return nil
 }
 
-func (command *RunnerCommand) finishExecutionWithError(ctx context.Context, execution agent.Execution, status agent.ExecutionStatus, err error) error {
+func (command *RunnerCommand) finishExecutionWithError(ctx context.Context, execution briefkit.Execution, status briefkit.ExecutionStatus, err error) error {
 	now := time.Now()
-	status.State = agent.ExecutionFailed
+	status.State = briefkit.ExecutionFailed
 	status.FinishedAt = &now
 
 	message := err.Error()
 	status.Error = &message
 	status.ExitCode = nil
 
-	var runtimeErr *agent.RuntimeExecutionError
+	var runtimeErr *briefkit.RuntimeExecutionError
 	if errors.As(err, &runtimeErr) {
 		status.ExitCode = runtimeErr.ExitCode
 	}
@@ -143,7 +143,7 @@ func (command *RunnerCommand) finishExecutionWithError(ctx context.Context, exec
 	return nil
 }
 
-func (command *RunnerCommand) drainRuntimeEvents(ctx context.Context, events <-chan agent.RuntimeEvent) {
+func (command *RunnerCommand) drainRuntimeEvents(ctx context.Context, events <-chan briefkit.RuntimeEvent) {
 	for {
 		select {
 		case <-ctx.Done():

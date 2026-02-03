@@ -6,9 +6,9 @@ import (
 
 	"github.com/alecthomas/kong"
 	briefkit_runner "github.com/orbiqd/orbiqd-briefkit/internal/app/briefkit-runner"
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/cli"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/runtime"
+	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 )
 
 var (
@@ -37,9 +37,9 @@ func main() {
 	if err != nil {
 		ctx.FatalIfErrorf(err)
 	}
-	ctx.BindTo(executionRepository, (*agent.ExecutionRepository)(nil))
+	ctx.BindTo(executionRepository, (*briefkit.ExecutionRepository)(nil))
 
-	ctx.BindTo(runtime.NewRegistry(), (*agent.RuntimeRegistry)(nil))
+	ctx.BindTo(runtime.NewRegistry(), (*briefkit.RuntimeRegistry)(nil))
 
 	cliCtx := context.Background()
 	err = ctx.BindToProvider(func() (context.Context, error) {

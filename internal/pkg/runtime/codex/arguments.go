@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/mcuadros/go-defaults"
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
+	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 )
 
 // CodexArguments constructs command-line arguments for the Codex CLI runtime.
@@ -80,7 +80,7 @@ func (arguments *CodexArguments) ToSlice() []string {
 
 // ApplyRuntimeConfig applies codex-specific runtime configuration to arguments.
 // Handles type conversion from the opaque RuntimeConfig interface.
-func (arguments *CodexArguments) ApplyRuntimeConfig(config agent.RuntimeConfig) error {
+func (arguments *CodexArguments) ApplyRuntimeConfig(config briefkit.RuntimeConfig) error {
 	var codexConfig RuntimeConfig
 	applyDefaults := false
 
@@ -130,7 +130,7 @@ func (arguments *CodexArguments) ApplyRuntimeConfig(config agent.RuntimeConfig) 
 }
 
 // ApplyRuntimeFeatures applies runtime feature flags to codex arguments.
-func (arguments *CodexArguments) ApplyRuntimeFeatures(features agent.RuntimeFeatures) error {
+func (arguments *CodexArguments) ApplyRuntimeFeatures(features briefkit.RuntimeFeatures) error {
 	if features.EnableSandbox == nil {
 		return nil
 	}
@@ -146,7 +146,7 @@ func (arguments *CodexArguments) ApplyRuntimeFeatures(features agent.RuntimeFeat
 
 // ApplyExecutionInput applies execution-specific inputs like model selection.
 // Returns error if model value is provided but empty.
-func (arguments *CodexArguments) ApplyExecutionInput(executionInput agent.ExecutionInput) error {
+func (arguments *CodexArguments) ApplyExecutionInput(executionInput briefkit.ExecutionInput) error {
 	if executionInput.Model != nil {
 		modelValue := strings.TrimSpace(*executionInput.Model)
 		if modelValue == "" {
