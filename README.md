@@ -1,19 +1,20 @@
 # OrbiqD BriefKit
 
-BriefKit runs your local, subscription-based agent CLIs (no APIs or API keys) and ships as a single, self-contained
-CLI and an MCP server - no Python/JS - just single binary without tons of dependencies.
-
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Go Version](https://img.shields.io/badge/Go-1.22+-00ADD8?logo=go)](go.mod)
 ![Coverage](https://img.shields.io/codecov/c/github/orbiqd/orbiqd-briefkit)
 
 ## Overview
 
-OrbiqD BriefKit is a local orchestration tool that runs **your existing agent CLIs** directly in your current working
-directory. Agents see your repository the same way you do, with no uploads and no remote context copying. BriefKit
-supports workflows where you want more than one LLM to collaborate in the same workspace.
+BriefKit runs your local, subscription-based agent CLIs (no APIs or API keys). It ships as a single, self-contained
+CLI and an MCP server - no Python/JS - just a single binary without tons of dependencies. OrbiqD BriefKit runs **your
+existing agent CLIs** directly in your current working directory. Agents see your repository the same way you do, with
+no uploads and no remote context copying. BriefKit supports workflows where you want more than one LLM to collaborate
+in the same workspace.
 
 Current supported local agent CLIs is `claude`, `codex`, `gemini`.
+
+## Usage
 
 **Agent-to-agent context handoff**
 
