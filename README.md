@@ -1,7 +1,7 @@
 # OrbiqD BriefKit
 
 BriefKit runs your local, subscription-based agent CLIs (no APIs or API keys) and ships as a single, self-contained
-install (no Python MCP), providing both a CLI and an MCP server.
+CLI and an MCP server - no Python/JS - just single binary without tons of dependencies.
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Go Version](https://img.shields.io/badge/Go-1.22+-00ADD8?logo=go)](go.mod)
@@ -54,55 +54,60 @@ briefkit-ctl ask codex "Refactor the parser to reduce allocations"
 briefkit-ctl ask claude "Review the parser refactor for correctness and style"
 ```
 
-## Key Features
-
-- Local-first execution in your current working directory
-- Multi-agent orchestration with shared workspace access
-- CLI for scripting and automation
-- MCP server for integrations with MCP-compatible clients (e.g. run Codex from Claude)
-- No API keys required (uses your local agent subscriptions)
-
 ## Installation
+
+### Prerequsities
 
 At least one agent CLI installed and available on your `PATH`:
 - `claude`
 - `codex`
 - `gemini`
 
-Install provides `briefkit-ctl`, `briefkit-mcp`, and `briefkit-runner`.
+### Install binaries
 
-### Linux
+<details>
+<summary>Linux (.deb)</summary>
 
-Replace `VERSION` with the latest release version.
-
-Deb package:
-
-```bash
-VERSION="1.2.3"
-wget "https://github.com/orbiqd/orbiqd-briefkit/releases/download/v${VERSION}/briefkit_${VERSION}_linux_amd64.deb"
-sudo dpkg -i "briefkit_${VERSION}_linux_amd64.deb"
-```
-
-RPM package:
+Requires `curl`, `jq`, and `dpkg`.
 
 ```bash
-VERSION="1.2.3"
-wget "https://github.com/orbiqd/orbiqd-briefkit/releases/download/v${VERSION}/briefkit_${VERSION}_linux_amd64.rpm"
-sudo rpm -i "briefkit_${VERSION}_linux_amd64.rpm"
+arch=$(uname -m); case "$arch" in x86_64|amd64) arch=amd64 ;; aarch64|arm64) arch=arm64 ;; *) echo "Unsupported arch: $arch" >&2; exit 1 ;; esac; \
+url=$(curl -sL https://api.github.com/repos/orbiqd/orbiqd-briefkit/releases/latest | jq -r ".assets[] | select(.name | endswith(\"linux_${arch}.deb\")) | .browser_download_url" | head -n1); \
+curl -L -o /tmp/briefkit.deb "$url" && sudo dpkg -i /tmp/briefkit.deb
 ```
 
-Tarball install:
+</details>
+
+<details>
+<summary>Linux (.rpm)</summary>
+
+Requires `curl`, `jq`, and `rpm`.
 
 ```bash
-VERSION="1.2.3"
-wget "https://github.com/orbiqd/orbiqd-briefkit/releases/download/v${VERSION}/briefkit_${VERSION}_linux_amd64.tar.gz"
-tar -xzf "briefkit_${VERSION}_linux_amd64.tar.gz"
-sudo install -m 0755 briefkit-ctl /usr/local/bin/briefkit-ctl
-sudo install -m 0755 briefkit-mcp /usr/local/bin/briefkit-mcp
-sudo install -m 0755 briefkit-runner /usr/local/bin/briefkit-runner
+arch=$(uname -m); case "$arch" in x86_64|amd64) arch=amd64 ;; aarch64|arm64) arch=arm64 ;; *) echo "Unsupported arch: $arch" >&2; exit 1 ;; esac; \
+url=$(curl -sL https://api.github.com/repos/orbiqd/orbiqd-briefkit/releases/latest | jq -r ".assets[] | select(.name | endswith(\"linux_${arch}.rpm\")) | .browser_download_url" | head -n1); \
+curl -L -o /tmp/briefkit.rpm "$url" && sudo rpm -i /tmp/briefkit.rpm
 ```
 
-### Homebrew (macOS)
+</details>
+
+<details>
+<summary>Linux (tarball to /usr/bin)</summary>
+
+Requires `curl`, `jq`, and `tar`.
+
+```bash
+arch=$(uname -m); case "$arch" in x86_64|amd64) arch=amd64 ;; aarch64|arm64) arch=arm64 ;; *) echo "Unsupported arch: $arch" >&2; exit 1 ;; esac; \
+url=$(curl -sL https://api.github.com/repos/orbiqd/orbiqd-briefkit/releases/latest | jq -r ".assets[] | select(.name | endswith(\"linux_${arch}.tar.gz\")) | .browser_download_url" | head -n1); \
+tmpdir=$(mktemp -d) && curl -L -o "$tmpdir/briefkit.tar.gz" "$url" && tar -xzf "$tmpdir/briefkit.tar.gz" -C "$tmpdir" && \
+sudo install -m 0755 "$tmpdir/briefkit-ctl" /usr/bin/briefkit-ctl && \
+sudo install -m 0755 "$tmpdir/briefkit-mcp" /usr/bin/briefkit-mcp && \
+sudo install -m 0755 "$tmpdir/briefkit-runner" /usr/bin/briefkit-runner
+```
+
+</details>
+
+**Homebrew (macOS)**
 
 ```bash
 brew tap orbiqd/briefkit
