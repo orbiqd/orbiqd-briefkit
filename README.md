@@ -286,18 +286,27 @@ Flags:
 
 ## Troubleshooting
 
-Problem: `briefkit-ctl setup` does not find your agent CLI.
+<details>
+<summary>Problem: `briefkit-ctl setup` does not find your agent CLI.</summary>
 
 - Verify the agent binary is in your PATH (`which claude`, `which codex`, `which gemini`).
 
-Problem: `briefkit-ctl ask` fails with missing agent config.
+</details>
+
+<details>
+<summary>Problem: `briefkit-ctl ask` fails with missing agent config.</summary>
 
 - Run `briefkit-ctl setup` and confirm the agent appears in `briefkit-ctl agent list`.
 
-Problem: MCP tools do not appear in your client.
+</details>
+
+<details>
+<summary>Problem: MCP tools do not appear in your client.</summary>
 
 - Ensure the MCP client points to the absolute path of `briefkit-mcp`.
 - Restart the MCP client after config changes.
+
+</details>
 
 ## License
 
