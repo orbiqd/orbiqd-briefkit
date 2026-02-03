@@ -124,41 +124,6 @@ Setup options you may need:
 - `--force` to overwrite existing agent configs
 - `--enable-sandbox=true|false` to override runtime sandbox defaults
 
-## Go Library Usage
-
-You can embed BriefKit in Go apps by providing implementations of `Runner`, `ExecutionRepository`, and `ConfigRepository`.
-
-```go
-package main
-
-import (
-	"context"
-
-	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
-)
-
-func main() {
-	ctx := context.Background()
-
-	var runner briefkit.Runner
-	var executionRepo briefkit.ExecutionRepository
-	var configRepo briefkit.ConfigRepository
-
-	client := briefkit.NewLocalClient(runner, executionRepo, configRepo)
-
-	result, err := client.Ask(
-		ctx,
-		"codex",
-		"Summarize this workspace",
-	)
-	if err != nil {
-		panic(err)
-	}
-
-	_ = result
-}
-```
-
 ## Configuration and Paths
 
 Default paths:
@@ -221,7 +186,8 @@ Global flags:
 - `--store-agent-config-path` (default: `~/.orbiqd/briefkit/agents`)
 - `--version` (print version)
 
-#### briefkit-ctl agent list
+<details>
+<summary>briefkit-ctl agent list</summary>
 
 Lists configured agents (JSON output).
 
@@ -229,7 +195,10 @@ Lists configured agents (JSON output).
 briefkit-ctl agent list
 ```
 
-#### briefkit-ctl agent add
+</details>
+
+<details>
+<summary>briefkit-ctl agent add</summary>
 
 Adds a new agent entry. Note: currently not implemented.
 
@@ -239,7 +208,10 @@ briefkit-ctl agent add <id> <kind> <path>
 
 Kind values: `claude`, `codex`, `gemini`.
 
-#### briefkit-ctl ask
+</details>
+
+<details>
+<summary>briefkit-ctl ask</summary>
 
 Runs a prompt with a configured agent.
 
@@ -253,7 +225,10 @@ Flags:
 - `--model` (override model)
 - `--conversation-id` (continue a conversation)
 
-#### briefkit-ctl setup
+</details>
+
+<details>
+<summary>briefkit-ctl setup</summary>
 
 Auto-discovers local agent CLIs, creates configs, and optionally registers the MCP server with supported runtimes.
 
@@ -269,7 +244,10 @@ Flags:
 - `--enable-sandbox` (set `true` or `false` to override defaults)
 - `--force` (overwrite existing configs)
 
-#### briefkit-ctl state execution list
+</details>
+
+<details>
+<summary>briefkit-ctl state execution list</summary>
 
 Lists stored executions (JSON output).
 
@@ -277,7 +255,10 @@ Lists stored executions (JSON output).
 briefkit-ctl state execution list
 ```
 
-#### briefkit-ctl state execution show
+</details>
+
+<details>
+<summary>briefkit-ctl state execution show</summary>
 
 Shows details for a single execution (JSON output).
 
@@ -285,7 +266,10 @@ Shows details for a single execution (JSON output).
 briefkit-ctl state execution show <execution-id>
 ```
 
-#### briefkit-ctl state execution create
+</details>
+
+<details>
+<summary>briefkit-ctl state execution create</summary>
 
 Creates a new execution record (advanced use; JSON output with execution ID).
 
@@ -297,6 +281,8 @@ Flags:
 
 - `-w`, `--working-dir` (default: `.`)
 - `-t`, `--timeout` (default: `5m`)
+
+</details>
 
 ## Troubleshooting
 
