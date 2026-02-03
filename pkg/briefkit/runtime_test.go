@@ -1,4 +1,4 @@
-package agent
+package briefkit
 
 import (
 	"encoding/json"

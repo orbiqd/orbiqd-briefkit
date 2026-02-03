@@ -1,4 +1,4 @@
-package agent
+package briefkit
 
 import (
 	"context"
@@ -23,7 +23,4 @@ type ConfigRepository interface {
 var (
 	// ErrAgentConfigNotFound indicates the agent configuration does not exist.
 	ErrAgentConfigNotFound = errors.New("agent config not found")
-
-	// ErrAgentIDInvalid indicates the agent identifier is missing or invalid.
-	ErrAgentIDInvalid = errors.New("agent id invalid")
 )

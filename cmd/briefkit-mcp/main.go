@@ -5,8 +5,9 @@ import (
 
 	"github.com/alecthomas/kong"
 	briefkit_mcp "github.com/orbiqd/orbiqd-briefkit/internal/app/briefkit-mcp"
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/cli"
+	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/runtime"
+	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 )
 
 var (
@@ -37,13 +38,18 @@ func main() {
 	if err != nil {
 		ctx.FatalIfErrorf(err)
 	}
-	ctx.BindTo(executionRepository, (*agent.ExecutionRepository)(nil))
+	ctx.BindTo(executionRepository, (*briefkit.ExecutionRepository)(nil))
 
 	configRepository, err := cli.CreateConfigRepositoryFromConfig(command.Store)
 	if err != nil {
 		ctx.FatalIfErrorf(err)
 	}
-	ctx.BindTo(configRepository, (*agent.ConfigRepository)(nil))
+	ctx.BindTo(configRepository, (*briefkit.ConfigRepository)(nil))
+
+	runner := runtime.NewRunner(executionRepository)
+
+	localClient := briefkit.NewLocalClient(runner, executionRepository, configRepository)
+	ctx.BindTo(localClient, (*briefkit.Client)(nil))
 
 	err = ctx.Run()
 	ctx.FatalIfErrorf(err)

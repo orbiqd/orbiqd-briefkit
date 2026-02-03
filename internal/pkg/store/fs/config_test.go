@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
+	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -33,14 +33,14 @@ func TestConfigRepository_UpdateGet(t *testing.T) {
 	require.NoError(t, err)
 	ctx := context.Background()
 
-	id := agent.AgentID("codex-1")
-	config := agent.Config{
+	id := briefkit.AgentID("codex-1")
+	config := briefkit.Config{
 		Runtime: struct {
-			Kind    agent.RuntimeKind     `json:"kind"`
-			Config  agent.RuntimeConfig   `json:"config"`
-			Feature agent.RuntimeFeatures `json:"feature,omitempty"`
+			Kind    briefkit.RuntimeKind     `json:"kind"`
+			Config  briefkit.RuntimeConfig   `json:"config"`
+			Feature briefkit.RuntimeFeatures `json:"feature,omitempty"`
 		}{
-			Kind: agent.RuntimeKind("codex"),
+			Kind: briefkit.RuntimeKind("codex"),
 			Config: map[string]any{
 				"path": "/bin/codex",
 			},
@@ -68,14 +68,14 @@ func TestConfigRepository_Exists(t *testing.T) {
 	require.NoError(t, err)
 	ctx := context.Background()
 
-	id := agent.AgentID("codex")
-	config := agent.Config{
+	id := briefkit.AgentID("codex")
+	config := briefkit.Config{
 		Runtime: struct {
-			Kind    agent.RuntimeKind     `json:"kind"`
-			Config  agent.RuntimeConfig   `json:"config"`
-			Feature agent.RuntimeFeatures `json:"feature,omitempty"`
+			Kind    briefkit.RuntimeKind     `json:"kind"`
+			Config  briefkit.RuntimeConfig   `json:"config"`
+			Feature briefkit.RuntimeFeatures `json:"feature,omitempty"`
 		}{
-			Kind: agent.RuntimeKind("codex"),
+			Kind: briefkit.RuntimeKind("codex"),
 			Config: map[string]any{
 				"path": "/bin/codex",
 			},
@@ -92,14 +92,14 @@ func TestConfigRepository_Exists(t *testing.T) {
 	})
 
 	t.Run("missing config", func(t *testing.T) {
-		exists, err := repo.Exists(ctx, agent.AgentID("codex-2"))
+		exists, err := repo.Exists(ctx, briefkit.AgentID("codex-2"))
 		require.NoError(t, err)
 		assert.False(t, exists)
 	})
 
 	t.Run("invalid id", func(t *testing.T) {
-		exists, err := repo.Exists(ctx, agent.AgentID("Codex"))
-		require.ErrorIs(t, err, agent.ErrAgentIDInvalid)
+		exists, err := repo.Exists(ctx, briefkit.AgentID("Codex"))
+		require.ErrorIs(t, err, briefkit.ErrAgentIDInvalid)
 		assert.False(t, exists)
 	})
 }
@@ -112,8 +112,8 @@ func TestConfigRepository_Update(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("invalid id", func(t *testing.T) {
-		err := repo.Update(ctx, agent.AgentID("Invalid"), agent.Config{})
-		assert.ErrorIs(t, err, agent.ErrAgentIDInvalid)
+		err := repo.Update(ctx, briefkit.AgentID("Invalid"), briefkit.Config{})
+		assert.ErrorIs(t, err, briefkit.ErrAgentIDInvalid)
 	})
 }
 
@@ -125,13 +125,13 @@ func TestConfigRepository_Get(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("missing config", func(t *testing.T) {
-		_, err := repo.Get(ctx, agent.AgentID("codex"))
-		assert.ErrorIs(t, err, agent.ErrAgentConfigNotFound)
+		_, err := repo.Get(ctx, briefkit.AgentID("codex"))
+		assert.ErrorIs(t, err, briefkit.ErrAgentConfigNotFound)
 	})
 
 	t.Run("invalid id", func(t *testing.T) {
-		_, err := repo.Get(ctx, agent.AgentID("Codex"))
-		assert.ErrorIs(t, err, agent.ErrAgentIDInvalid)
+		_, err := repo.Get(ctx, briefkit.AgentID("Codex"))
+		assert.ErrorIs(t, err, briefkit.ErrAgentIDInvalid)
 	})
 }
 
@@ -146,22 +146,22 @@ func TestConfigRepository_List(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, ids)
 
-	require.NoError(t, repo.Update(ctx, agent.AgentID("codex"), agent.Config{
+	require.NoError(t, repo.Update(ctx, briefkit.AgentID("codex"), briefkit.Config{
 		Runtime: struct {
-			Kind    agent.RuntimeKind     `json:"kind"`
-			Config  agent.RuntimeConfig   `json:"config"`
-			Feature agent.RuntimeFeatures `json:"feature,omitempty"`
+			Kind    briefkit.RuntimeKind     `json:"kind"`
+			Config  briefkit.RuntimeConfig   `json:"config"`
+			Feature briefkit.RuntimeFeatures `json:"feature,omitempty"`
 		}{
-			Kind: agent.RuntimeKind("codex"),
+			Kind: briefkit.RuntimeKind("codex"),
 		},
 	}))
-	require.NoError(t, repo.Update(ctx, agent.AgentID("claude-code"), agent.Config{
+	require.NoError(t, repo.Update(ctx, briefkit.AgentID("claude-code"), briefkit.Config{
 		Runtime: struct {
-			Kind    agent.RuntimeKind     `json:"kind"`
-			Config  agent.RuntimeConfig   `json:"config"`
-			Feature agent.RuntimeFeatures `json:"feature,omitempty"`
+			Kind    briefkit.RuntimeKind     `json:"kind"`
+			Config  briefkit.RuntimeConfig   `json:"config"`
+			Feature briefkit.RuntimeFeatures `json:"feature,omitempty"`
 		}{
-			Kind: agent.RuntimeKind("claude-code"),
+			Kind: briefkit.RuntimeKind("claude-code"),
 		},
 	}))
 	require.NoError(t, afero.WriteFile(memFs, filepath.Join(basePath, "readme.txt"), []byte("ignore"), 0644))
@@ -170,5 +170,5 @@ func TestConfigRepository_List(t *testing.T) {
 
 	ids, err = repo.List(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, []agent.AgentID{"claude-code", "codex"}, ids)
+	assert.Equal(t, []briefkit.AgentID{"claude-code", "codex"}, ids)
 }

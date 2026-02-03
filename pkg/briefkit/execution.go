@@ -1,4 +1,4 @@
-package agent
+package briefkit
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/mitchellh/go-homedir"
+
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
 )
 

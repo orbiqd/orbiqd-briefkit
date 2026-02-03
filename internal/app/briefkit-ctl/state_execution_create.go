@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/mitchellh/go-homedir"
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
+	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 )
 
 // StateExecutionCreateCmd creates a new execution.
@@ -22,11 +22,11 @@ type StateExecutionCreateCmd struct {
 }
 
 type executionCreateOutput struct {
-	ID agent.ExecutionID `json:"id"`
+	ID briefkit.ExecutionID `json:"id"`
 }
 
-func (e *StateExecutionCreateCmd) Run(ctx context.Context, repository agent.ExecutionRepository, configRepository agent.ConfigRepository) error {
-	config, err := configRepository.Get(ctx, agent.AgentID(e.AgentID))
+func (e *StateExecutionCreateCmd) Run(ctx context.Context, repository briefkit.ExecutionRepository, configRepository briefkit.ConfigRepository) error {
+	config, err := configRepository.Get(ctx, briefkit.AgentID(e.AgentID))
 	if err != nil {
 		return fmt.Errorf("load agent config: %w", err)
 	}
@@ -46,7 +46,7 @@ func (e *StateExecutionCreateCmd) Run(ctx context.Context, repository agent.Exec
 		return fmt.Errorf("resolve working directory: %w", err)
 	}
 
-	input := agent.ExecutionInput{
+	input := briefkit.ExecutionInput{
 		WorkingDirectory: &workingDir,
 		Timeout:          utils.Duration(timeout),
 		Prompt:           e.Prompt,

@@ -3,8 +3,8 @@ package claude
 import (
 	"testing"
 
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
+	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -87,8 +87,8 @@ func TestClaudeArguments_ToSlice(t *testing.T) {
 func TestClaudeArguments_ApplyExecutionInput(t *testing.T) {
 	t.Run("applies model and conversation id", func(t *testing.T) {
 		args := NewClaudeArguments()
-		convID := agent.ConversationID("test-conv-id")
-		input := agent.ExecutionInput{
+		convID := briefkit.ConversationID("test-conv-id")
+		input := briefkit.ExecutionInput{
 			Model:          utils.ToPointer("test-model"),
 			ConversationID: &convID,
 		}
@@ -101,7 +101,7 @@ func TestClaudeArguments_ApplyExecutionInput(t *testing.T) {
 
 	t.Run("skips nil values", func(t *testing.T) {
 		args := NewClaudeArguments()
-		input := agent.ExecutionInput{
+		input := briefkit.ExecutionInput{
 			Model:          nil,
 			ConversationID: nil,
 		}
@@ -116,7 +116,7 @@ func TestClaudeArguments_ApplyExecutionInput(t *testing.T) {
 func TestClaudeArguments_ApplyRuntimeFeatures(t *testing.T) {
 	t.Run("EnableSandbox=nil uses runtime default", func(t *testing.T) {
 		args := NewClaudeArguments()
-		features := agent.RuntimeFeatures{}
+		features := briefkit.RuntimeFeatures{}
 
 		err := args.ApplyRuntimeFeatures(features)
 		require.NoError(t, err)
@@ -126,7 +126,7 @@ func TestClaudeArguments_ApplyRuntimeFeatures(t *testing.T) {
 
 	t.Run("EnableSandbox=false sets bypassPermissions", func(t *testing.T) {
 		args := NewClaudeArguments()
-		features := agent.RuntimeFeatures{
+		features := briefkit.RuntimeFeatures{
 			EnableSandbox: utils.ToPointer(false),
 		}
 
@@ -138,7 +138,7 @@ func TestClaudeArguments_ApplyRuntimeFeatures(t *testing.T) {
 
 	t.Run("EnableSandbox=true enables sandbox via settings", func(t *testing.T) {
 		args := NewClaudeArguments()
-		features := agent.RuntimeFeatures{
+		features := briefkit.RuntimeFeatures{
 			EnableSandbox: utils.ToPointer(true),
 		}
 

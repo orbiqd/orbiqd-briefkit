@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
+	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -106,7 +106,7 @@ func TestRuntime_GetDefaultFeatures_ReturnsEmptyFeatures(t *testing.T) {
 	features, err := NewRuntime().GetDefaultFeatures(context.Background())
 
 	require.NoError(t, err)
-	assert.Equal(t, agent.RuntimeFeatures{}, features)
+	assert.Equal(t, briefkit.RuntimeFeatures{}, features)
 }
 
 func TestRuntime_RegisterMCPServer_WhenNameMissing_ThenReturnsError(t *testing.T) {
@@ -121,8 +121,8 @@ func TestRuntime_RegisterMCPServer_WhenSTDIOConfigMissing_ThenReturnsError(t *te
 	resetGeminiMockEnv(t)
 	err := NewRuntime().RegisterMCPServer(
 		context.Background(),
-		agent.RuntimeMCPServerName("briefkit"),
-		agent.RuntimeMCPServer{},
+		briefkit.RuntimeMCPServerName("briefkit"),
+		briefkit.RuntimeMCPServer{},
 	)
 
 	require.Error(t, err)
@@ -133,8 +133,8 @@ func TestRuntime_RegisterMCPServer_WhenCommandMissing_ThenReturnsError(t *testin
 	resetGeminiMockEnv(t)
 	err := NewRuntime().RegisterMCPServer(
 		context.Background(),
-		agent.RuntimeMCPServerName("briefkit"),
-		agent.RuntimeMCPServer{STDIO: &agent.RuntimeSTDIOMCPServer{Command: "   "}},
+		briefkit.RuntimeMCPServerName("briefkit"),
+		briefkit.RuntimeMCPServer{STDIO: &briefkit.RuntimeSTDIOMCPServer{Command: "   "}},
 	)
 
 	require.Error(t, err)
@@ -146,7 +146,7 @@ func TestRuntime_RegisterMCPServer_WhenRemoveNotFound_ThenReturnsNil(t *testing.
 	setGeminiMockExecutable(t)
 	t.Setenv("MOCK_GEMINI_MCP_NOT_FOUND", "1")
 
-	err := NewRuntime().RegisterMCPServer(context.Background(), agent.RuntimeMCPServerName("briefkit"), validMCPServer())
+	err := NewRuntime().RegisterMCPServer(context.Background(), briefkit.RuntimeMCPServerName("briefkit"), validMCPServer())
 
 	require.NoError(t, err)
 }
@@ -156,7 +156,7 @@ func TestRuntime_RegisterMCPServer_WhenRemoveFails_ThenReturnsError(t *testing.T
 	setGeminiMockExecutable(t)
 	t.Setenv("MOCK_GEMINI_MCP_REMOVE_FAIL", "1")
 
-	err := NewRuntime().RegisterMCPServer(context.Background(), agent.RuntimeMCPServerName("briefkit"), validMCPServer())
+	err := NewRuntime().RegisterMCPServer(context.Background(), briefkit.RuntimeMCPServerName("briefkit"), validMCPServer())
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "gemini mcp server removal")
@@ -167,7 +167,7 @@ func TestRuntime_RegisterMCPServer_WhenAddFailsWithOutput_ThenReturnsError(t *te
 	setGeminiMockExecutable(t)
 	t.Setenv("MOCK_GEMINI_MCP_ADD_FAIL", "1")
 
-	err := NewRuntime().RegisterMCPServer(context.Background(), agent.RuntimeMCPServerName("briefkit"), validMCPServer())
+	err := NewRuntime().RegisterMCPServer(context.Background(), briefkit.RuntimeMCPServerName("briefkit"), validMCPServer())
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "gemini mcp server registration")
@@ -180,7 +180,7 @@ func TestRuntime_RegisterMCPServer_WhenAddFailsWithoutOutput_ThenReturnsError(t 
 	t.Setenv("MOCK_GEMINI_MCP_ADD_FAIL", "1")
 	t.Setenv("MOCK_GEMINI_MCP_ADD_NO_OUTPUT", "1")
 
-	err := NewRuntime().RegisterMCPServer(context.Background(), agent.RuntimeMCPServerName("briefkit"), validMCPServer())
+	err := NewRuntime().RegisterMCPServer(context.Background(), briefkit.RuntimeMCPServerName("briefkit"), validMCPServer())
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "gemini mcp server registration")
@@ -191,7 +191,7 @@ func TestRuntime_RegisterMCPServer_WhenAddSucceeds_ThenReturnsNil(t *testing.T) 
 	resetGeminiMockEnv(t)
 	setGeminiMockExecutable(t)
 
-	err := NewRuntime().RegisterMCPServer(context.Background(), agent.RuntimeMCPServerName("briefkit"), validMCPServer())
+	err := NewRuntime().RegisterMCPServer(context.Background(), briefkit.RuntimeMCPServerName("briefkit"), validMCPServer())
 
 	require.NoError(t, err)
 }
@@ -201,15 +201,15 @@ func TestRuntime_RegisterMCPServer_WhenContextCanceled_ThenReturnsError(t *testi
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	err := NewRuntime().RegisterMCPServer(ctx, agent.RuntimeMCPServerName("briefkit"), validMCPServer())
+	err := NewRuntime().RegisterMCPServer(ctx, briefkit.RuntimeMCPServerName("briefkit"), validMCPServer())
 
 	require.Error(t, err)
 	assert.ErrorIs(t, err, context.Canceled)
 }
 
-func validMCPServer() agent.RuntimeMCPServer {
-	return agent.RuntimeMCPServer{
-		STDIO: &agent.RuntimeSTDIOMCPServer{
+func validMCPServer() briefkit.RuntimeMCPServer {
+	return briefkit.RuntimeMCPServer{
+		STDIO: &briefkit.RuntimeSTDIOMCPServer{
 			Command:   "echo",
 			Arguments: []string{"hello"},
 		},

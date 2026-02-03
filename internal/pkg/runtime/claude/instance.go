@@ -14,17 +14,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
+	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 )
 
 type Instance struct {
 	cmd    *exec.Cmd
 	stdout io.ReadCloser
 
-	events chan agent.RuntimeEvent
+	events chan briefkit.RuntimeEvent
 	done   chan struct{}
 
-	result agent.RuntimeResult
+	result briefkit.RuntimeResult
 	err    error
 
 	stderr strings.Builder
@@ -45,7 +45,7 @@ type claudeEvent struct {
 	Result string `json:"result,omitempty"`
 }
 
-func newInstance(ctx context.Context, executionId agent.ExecutionID, executionInput agent.ExecutionInput, runtimeConfig RuntimeConfig, runtimeFeatures agent.RuntimeFeatures, logDir string) (*Instance, error) {
+func newInstance(ctx context.Context, executionId briefkit.ExecutionID, executionInput briefkit.ExecutionInput, runtimeConfig RuntimeConfig, runtimeFeatures briefkit.RuntimeFeatures, logDir string) (*Instance, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func newInstance(ctx context.Context, executionId agent.ExecutionID, executionIn
 
 	instance := &Instance{
 		cmd:    cmd,
-		events: make(chan agent.RuntimeEvent, 10),
+		events: make(chan briefkit.RuntimeEvent, 10),
 		done:   make(chan struct{}),
 	}
 
@@ -133,7 +133,7 @@ func newInstance(ctx context.Context, executionId agent.ExecutionID, executionIn
 		return nil, fmt.Errorf("start claude: %w", err)
 	}
 
-	instance.emitRuntimeEvent(agent.RuntimeStartedEvent{Timestamp: time.Now()})
+	instance.emitRuntimeEvent(briefkit.RuntimeStartedEvent{Timestamp: time.Now()})
 	go instance.run(stdoutLog)
 
 	return instance, nil
@@ -142,7 +142,7 @@ func newInstance(ctx context.Context, executionId agent.ExecutionID, executionIn
 func (instance *Instance) run(stdoutLog io.Writer) {
 	defer close(instance.done)
 	defer close(instance.events)
-	defer instance.emitRuntimeEvent(agent.RuntimeFinishedEvent{Timestamp: time.Now()})
+	defer instance.emitRuntimeEvent(briefkit.RuntimeFinishedEvent{Timestamp: time.Now()})
 	defer func() {
 		for _, closer := range instance.closers {
 			_ = closer.Close()
@@ -158,7 +158,7 @@ func (instance *Instance) run(stdoutLog io.Writer) {
 	waitErr := instance.cmd.Wait()
 
 	if parseErr != nil {
-		instance.err = &agent.RuntimeExecutionError{
+		instance.err = &briefkit.RuntimeExecutionError{
 			Message: parseErr.Error(),
 			Cause:   parseErr,
 		}
@@ -170,16 +170,16 @@ func (instance *Instance) run(stdoutLog io.Writer) {
 	}
 }
 
-func (instance *Instance) Events() <-chan agent.RuntimeEvent {
+func (instance *Instance) Events() <-chan briefkit.RuntimeEvent {
 	return instance.events
 }
 
-func (instance *Instance) Wait(ctx context.Context) (agent.RuntimeResult, error) {
+func (instance *Instance) Wait(ctx context.Context) (briefkit.RuntimeResult, error) {
 	select {
 	case <-instance.done:
 		return instance.result, instance.err
 	case <-ctx.Done():
-		return agent.RuntimeResult{}, ctx.Err()
+		return briefkit.RuntimeResult{}, ctx.Err()
 	}
 }
 
@@ -210,7 +210,7 @@ func (instance *Instance) watchClaudeEvents(stdoutLog io.Writer) error {
 		switch event.Type {
 		case "system":
 			if event.Subtype == "init" && event.SessionID != "" {
-				instance.result.ConversationID = agent.ConversationID(event.SessionID)
+				instance.result.ConversationID = briefkit.ConversationID(event.SessionID)
 			}
 		case "assistant":
 			for _, content := range event.Message.Content {
@@ -238,7 +238,7 @@ func (instance *Instance) runtimeError(err error) error {
 		message = err.Error()
 	}
 
-	runtimeErr := &agent.RuntimeExecutionError{
+	runtimeErr := &briefkit.RuntimeExecutionError{
 		Message: message,
 		Cause:   err,
 	}
@@ -252,7 +252,7 @@ func (instance *Instance) runtimeError(err error) error {
 	return runtimeErr
 }
 
-func (instance *Instance) emitRuntimeEvent(event agent.RuntimeEvent) {
+func (instance *Instance) emitRuntimeEvent(event briefkit.RuntimeEvent) {
 	if instance.events == nil {
 		return
 	}

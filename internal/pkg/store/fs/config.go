@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
+	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 	"github.com/spf13/afero"
 )
 
@@ -35,7 +35,7 @@ func NewConfigRepository(basePath string, fs afero.Fs) (*ConfigRepository, error
 }
 
 // Exists reports whether an agent config with the given identifier exists.
-func (r *ConfigRepository) Exists(ctx context.Context, id agent.AgentID) (bool, error) {
+func (r *ConfigRepository) Exists(ctx context.Context, id briefkit.AgentID) (bool, error) {
 	if err := id.Validate(); err != nil {
 		return false, err
 	}
@@ -44,21 +44,21 @@ func (r *ConfigRepository) Exists(ctx context.Context, id agent.AgentID) (bool, 
 }
 
 // Get loads the agent config for the given identifier.
-func (r *ConfigRepository) Get(ctx context.Context, id agent.AgentID) (agent.Config, error) {
+func (r *ConfigRepository) Get(ctx context.Context, id briefkit.AgentID) (briefkit.Config, error) {
 	if err := id.Validate(); err != nil {
-		return agent.Config{}, err
+		return briefkit.Config{}, err
 	}
 
-	config, err := readYAML[agent.Config](r.fs, r.configFilePath(id))
+	config, err := readYAML[briefkit.Config](r.fs, r.configFilePath(id))
 	if err != nil {
-		return agent.Config{}, err
+		return briefkit.Config{}, err
 	}
 
 	return config, nil
 }
 
 // Update persists the agent config for the given identifier.
-func (r *ConfigRepository) Update(ctx context.Context, id agent.AgentID, config agent.Config) error {
+func (r *ConfigRepository) Update(ctx context.Context, id briefkit.AgentID, config briefkit.Config) error {
 	if err := id.Validate(); err != nil {
 		return err
 	}
@@ -71,16 +71,16 @@ func (r *ConfigRepository) Update(ctx context.Context, id agent.AgentID, config 
 }
 
 // List returns the identifiers of all available agent configs.
-func (r *ConfigRepository) List(ctx context.Context) ([]agent.AgentID, error) {
+func (r *ConfigRepository) List(ctx context.Context) ([]briefkit.AgentID, error) {
 	entries, err := afero.ReadDir(r.fs, r.basePath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return []agent.AgentID{}, nil
+			return []briefkit.AgentID{}, nil
 		}
 		return nil, err
 	}
 
-	ids := make([]agent.AgentID, 0, len(entries))
+	ids := make([]briefkit.AgentID, 0, len(entries))
 	for _, entry := range entries {
 		if entry.IsDir() {
 			continue
@@ -91,7 +91,7 @@ func (r *ConfigRepository) List(ctx context.Context) ([]agent.AgentID, error) {
 			continue
 		}
 
-		id := agent.AgentID(strings.TrimSuffix(name, agentConfigFileExt))
+		id := briefkit.AgentID(strings.TrimSuffix(name, agentConfigFileExt))
 		if err := id.Validate(); err != nil {
 			continue
 		}
@@ -106,6 +106,6 @@ func (r *ConfigRepository) List(ctx context.Context) ([]agent.AgentID, error) {
 	return ids, nil
 }
 
-func (r *ConfigRepository) configFilePath(id agent.AgentID) string {
+func (r *ConfigRepository) configFilePath(id briefkit.AgentID) string {
 	return filepath.Join(r.basePath, string(id)+agentConfigFileExt)
 }

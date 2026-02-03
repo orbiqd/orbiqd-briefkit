@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
+	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 	"github.com/spf13/afero"
 	"sigs.k8s.io/yaml"
 )
@@ -67,7 +67,7 @@ func readJSON[T any](fs afero.Fs, filePath string) (T, error) {
 	b, err := afero.ReadFile(fs, filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return result, fmt.Errorf("read json: %w", agent.ErrExecutionNotFound)
+			return result, fmt.Errorf("read json: %w", briefkit.ErrExecutionNotFound)
 		}
 		return result, fmt.Errorf("read json: failed to read file %s: %w", filePath, err)
 	}
@@ -83,7 +83,7 @@ func readYAML[T any](fs afero.Fs, filePath string) (T, error) {
 	b, err := afero.ReadFile(fs, filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return result, fmt.Errorf("read yaml: %w", agent.ErrAgentConfigNotFound)
+			return result, fmt.Errorf("read yaml: %w", briefkit.ErrAgentConfigNotFound)
 		}
 		return result, fmt.Errorf("read yaml: failed to read file %s: %w", filePath, err)
 	}

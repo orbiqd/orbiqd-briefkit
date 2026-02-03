@@ -6,20 +6,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
+	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-var sampleAgentConfig = agent.Config{
+var sampleAgentConfig = briefkit.Config{
 	Runtime: struct {
-		Kind    agent.RuntimeKind     `json:"kind"`
-		Config  agent.RuntimeConfig   `json:"config"`
-		Feature agent.RuntimeFeatures `json:"feature,omitempty"`
+		Kind    briefkit.RuntimeKind     `json:"kind"`
+		Config  briefkit.RuntimeConfig   `json:"config"`
+		Feature briefkit.RuntimeFeatures `json:"feature,omitempty"`
 	}{
-		Kind: agent.RuntimeKind("codex"),
+		Kind: briefkit.RuntimeKind("codex"),
 		Config: map[string]any{
 			"path": "/bin/agent",
 		},
@@ -51,7 +51,7 @@ func TestRepository_Create(t *testing.T) {
 	workingDir := "/app"
 
 	// Prepare a valid input
-	input := agent.ExecutionInput{
+	input := briefkit.ExecutionInput{
 		Prompt:           "test prompt",
 		Timeout:          utils.Duration(5 * time.Minute),
 		WorkingDirectory: &workingDir,
@@ -80,21 +80,21 @@ func TestRepository_Create(t *testing.T) {
 	assert.True(t, fileExists, "agent.json should exist")
 
 	// Verify content of input.json
-	retrievedInput, err := readJSON[agent.ExecutionInput](memFs, filepath.Join(executionPath, executionInputFileName))
+	retrievedInput, err := readJSON[briefkit.ExecutionInput](memFs, filepath.Join(executionPath, executionInputFileName))
 	require.NoError(t, err)
 	assert.Equal(t, input.Prompt, retrievedInput.Prompt)
 	assert.Equal(t, input.Timeout, retrievedInput.Timeout)
 	assert.Equal(t, input.WorkingDirectory, retrievedInput.WorkingDirectory)
 
 	// Verify content of agent.json
-	retrievedConfig, err := readJSON[agent.Config](memFs, filepath.Join(executionPath, executionAgentConfigFileName))
+	retrievedConfig, err := readJSON[briefkit.Config](memFs, filepath.Join(executionPath, executionAgentConfigFileName))
 	require.NoError(t, err)
 	assert.Equal(t, sampleAgentConfig, retrievedConfig)
 
 	// Verify content of status.json
-	retrievedStatus, err := readJSON[agent.ExecutionStatus](memFs, filepath.Join(executionPath, executionStatusFileName))
+	retrievedStatus, err := readJSON[briefkit.ExecutionStatus](memFs, filepath.Join(executionPath, executionStatusFileName))
 	require.NoError(t, err)
-	assert.Equal(t, agent.ExecutionCreated, retrievedStatus.State)
+	assert.Equal(t, briefkit.ExecutionCreated, retrievedStatus.State)
 	assert.WithinDuration(t, time.Now(), retrievedStatus.CreatedAt, time.Second)
 	assert.WithinDuration(t, time.Now(), retrievedStatus.UpdatedAt, time.Second)
 	assert.Nil(t, retrievedStatus.FinishedAt)
@@ -105,8 +105,8 @@ func TestRepository_Create(t *testing.T) {
 		invalidInput.Prompt = "" // Invalid prompt
 		id, err := repo.Create(ctx, invalidInput, sampleAgentConfig)
 		require.Error(t, err)
-		assert.Equal(t, agent.EmptyExecutionID, id)
-		assert.ErrorIs(t, err, agent.ErrExecutionPromptRequired)
+		assert.Equal(t, briefkit.EmptyExecutionID, id)
+		assert.ErrorIs(t, err, briefkit.ErrExecutionPromptRequired)
 	})
 }
 
@@ -118,7 +118,7 @@ func TestRepository_Exists(t *testing.T) {
 	ctx := context.Background()
 	workingDir := "/app"
 
-	input := agent.ExecutionInput{
+	input := briefkit.ExecutionInput{
 		Prompt:           "test prompt",
 		Timeout:          utils.Duration(5 * time.Minute),
 		WorkingDirectory: &workingDir,
@@ -134,22 +134,22 @@ func TestRepository_Exists(t *testing.T) {
 	})
 
 	t.Run("non-existing execution", func(t *testing.T) {
-		nonExistingID := agent.ExecutionID("non-existing-uuid") // Not a valid UUID, but Exists should handle it
+		nonExistingID := briefkit.ExecutionID("non-existing-uuid") // Not a valid UUID, but Exists should handle it
 		exists, err := repo.Exists(ctx, nonExistingID)
 		require.Error(t, err) // Should return error because ID validation fails
 		assert.False(t, exists)
 
 		// Test with valid but non-existing UUID
-		validNonExistingID := agent.NewExecutionID()
+		validNonExistingID := briefkit.NewExecutionID()
 		exists, err = repo.Exists(ctx, validNonExistingID)
 		require.NoError(t, err)
 		assert.False(t, exists)
 	})
 
 	t.Run("invalid ID", func(t *testing.T) {
-		invalidID := agent.ExecutionID("invalid")
+		invalidID := briefkit.ExecutionID("invalid")
 		exists, err := repo.Exists(ctx, invalidID)
-		require.ErrorIs(t, err, agent.ErrExecutionIDInvalid)
+		require.ErrorIs(t, err, briefkit.ErrExecutionIDInvalid)
 		assert.False(t, exists)
 	})
 }
@@ -162,7 +162,7 @@ func TestRepository_Get(t *testing.T) {
 	ctx := context.Background()
 	workingDir := "/app"
 
-	input := agent.ExecutionInput{
+	input := briefkit.ExecutionInput{
 		Prompt:           "test prompt",
 		Timeout:          utils.Duration(5 * time.Minute), // Using the correct Duration type
 		WorkingDirectory: &workingDir,
@@ -186,7 +186,7 @@ func TestRepository_Get(t *testing.T) {
 		// Verify GetStatus
 		retrievedStatus, err := exec.GetStatus(ctx)
 		require.NoError(t, err)
-		assert.Equal(t, agent.ExecutionCreated, retrievedStatus.State)
+		assert.Equal(t, briefkit.ExecutionCreated, retrievedStatus.State)
 
 		retrievedConfig, err := exec.GetAgentConfig(ctx)
 		require.NoError(t, err)
@@ -194,16 +194,16 @@ func TestRepository_Get(t *testing.T) {
 	})
 
 	t.Run("non-existing execution", func(t *testing.T) {
-		nonExistingID := agent.NewExecutionID()
+		nonExistingID := briefkit.NewExecutionID()
 		exec, err := repo.Get(ctx, nonExistingID)
-		require.ErrorIs(t, err, agent.ErrExecutionNotFound)
+		require.ErrorIs(t, err, briefkit.ErrExecutionNotFound)
 		assert.Nil(t, exec)
 	})
 
 	t.Run("invalid ID", func(t *testing.T) {
-		invalidID := agent.ExecutionID("invalid")
+		invalidID := briefkit.ExecutionID("invalid")
 		exec, err := repo.Get(ctx, invalidID)
-		require.ErrorIs(t, err, agent.ErrExecutionIDInvalid)
+		require.ErrorIs(t, err, briefkit.ErrExecutionIDInvalid)
 		assert.Nil(t, exec)
 	})
 }
@@ -227,9 +227,9 @@ func TestRepository_Find(t *testing.T) {
 		require.NoError(t, err)
 		ctx := context.Background()
 
-		validIDs := []agent.ExecutionID{
-			agent.ExecutionID("00000000-0000-0000-0000-000000000002"),
-			agent.ExecutionID("00000000-0000-0000-0000-000000000001"),
+		validIDs := []briefkit.ExecutionID{
+			briefkit.ExecutionID("00000000-0000-0000-0000-000000000002"),
+			briefkit.ExecutionID("00000000-0000-0000-0000-000000000001"),
 		}
 
 		for _, id := range validIDs {
@@ -249,8 +249,8 @@ func TestRepository_Find(t *testing.T) {
 		ids, err := repo.Find(ctx)
 		require.NoError(t, err)
 		require.Len(t, ids, 2)
-		assert.Equal(t, agent.ExecutionID("00000000-0000-0000-0000-000000000001"), ids[0])
-		assert.Equal(t, agent.ExecutionID("00000000-0000-0000-0000-000000000002"), ids[1])
+		assert.Equal(t, briefkit.ExecutionID("00000000-0000-0000-0000-000000000001"), ids[0])
+		assert.Equal(t, briefkit.ExecutionID("00000000-0000-0000-0000-000000000002"), ids[1])
 	})
 }
 
@@ -262,7 +262,7 @@ func TestExecution_GetSetResult(t *testing.T) {
 	ctx := context.Background()
 	workingDir := "/app"
 
-	input := agent.ExecutionInput{
+	input := briefkit.ExecutionInput{
 		Prompt:           "test prompt",
 		Timeout:          utils.Duration(5 * time.Minute),
 		WorkingDirectory: &workingDir,
@@ -279,10 +279,10 @@ func TestExecution_GetSetResult(t *testing.T) {
 		assert.False(t, hasResult)
 
 		_, err = exec.GetResult(ctx)
-		require.ErrorIs(t, err, agent.ErrExecutionNoResult)
+		require.ErrorIs(t, err, briefkit.ErrExecutionNoResult)
 	})
 
-	result := agent.ExecutionResult{} // Empty result for now
+	result := briefkit.ExecutionResult{} // Empty result for now
 
 	t.Run("set result", func(t *testing.T) {
 		err := exec.SetResult(ctx, result)
@@ -299,14 +299,14 @@ func TestExecution_GetSetResult(t *testing.T) {
 		// Verify status update
 		status, err := exec.GetStatus(ctx)
 		require.NoError(t, err)
-		assert.Equal(t, agent.ExecutionSucceeded, status.State)
+		assert.Equal(t, briefkit.ExecutionSucceeded, status.State)
 		assert.NotNil(t, status.FinishedAt)
 		assert.WithinDuration(t, time.Now(), *status.FinishedAt, time.Second)
 		assert.WithinDuration(t, time.Now(), status.UpdatedAt, time.Second)
 	})
 
 	t.Run("can set result twice", func(t *testing.T) {
-		updatedResult := agent.ExecutionResult{Response: "updated response"}
+		updatedResult := briefkit.ExecutionResult{Response: "updated response"}
 
 		err := exec.SetResult(ctx, updatedResult)
 		require.NoError(t, err)
@@ -325,7 +325,7 @@ func TestExecution_UpdateStatus(t *testing.T) {
 	ctx := context.Background()
 	workingDir := "/app"
 
-	input := agent.ExecutionInput{
+	input := briefkit.ExecutionInput{
 		Prompt:           "test prompt",
 		Timeout:          utils.Duration(5 * time.Minute),
 		WorkingDirectory: &workingDir,
@@ -339,15 +339,15 @@ func TestExecution_UpdateStatus(t *testing.T) {
 	t.Run("update status from created to running", func(t *testing.T) {
 		status, err := exec.GetStatus(ctx)
 		require.NoError(t, err)
-		assert.Equal(t, agent.ExecutionCreated, status.State)
+		assert.Equal(t, briefkit.ExecutionCreated, status.State)
 
-		status.State = agent.ExecutionRunning
+		status.State = briefkit.ExecutionRunning
 		err = exec.UpdateStatus(ctx, status)
 		require.NoError(t, err)
 
 		updatedStatus, err := exec.GetStatus(ctx)
 		require.NoError(t, err)
-		assert.Equal(t, agent.ExecutionRunning, updatedStatus.State)
+		assert.Equal(t, briefkit.ExecutionRunning, updatedStatus.State)
 		assert.WithinDuration(t, time.Now(), updatedStatus.UpdatedAt, time.Second)
 		assert.True(t, updatedStatus.UpdatedAt.After(status.UpdatedAt)) // UpdatedAt should be newer
 	})
@@ -355,14 +355,14 @@ func TestExecution_UpdateStatus(t *testing.T) {
 	t.Run("update status to started", func(t *testing.T) {
 		status, err := exec.GetStatus(ctx)
 		require.NoError(t, err)
-		assert.Equal(t, agent.ExecutionRunning, status.State)
+		assert.Equal(t, briefkit.ExecutionRunning, status.State)
 
-		status.State = agent.ExecutionStarted
+		status.State = briefkit.ExecutionStarted
 		err = exec.UpdateStatus(ctx, status)
 		require.NoError(t, err)
 
 		updatedStatus, err := exec.GetStatus(ctx)
 		require.NoError(t, err)
-		assert.Equal(t, agent.ExecutionStarted, updatedStatus.State)
+		assert.Equal(t, briefkit.ExecutionStarted, updatedStatus.State)
 	})
 }

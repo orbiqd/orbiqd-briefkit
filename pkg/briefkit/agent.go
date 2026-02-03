@@ -1,6 +1,9 @@
-package agent
+package briefkit
 
-import "regexp"
+import (
+	"errors"
+	"regexp"
+)
 
 // ConversationID identifies the session to continue an ongoing conversation with an agent.
 type ConversationID string
@@ -18,3 +21,8 @@ func (a AgentID) Validate() error {
 
 	return nil
 }
+
+var (
+	// ErrAgentIDInvalid indicates the agent identifier is missing or invalid.
+	ErrAgentIDInvalid = errors.New("agent id invalid")
+)

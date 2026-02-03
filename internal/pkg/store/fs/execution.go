@@ -8,7 +8,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/agent"
+	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 	"github.com/spf13/afero"
 )
 
@@ -40,45 +40,45 @@ func NewExecutionRepository(basePath string, fs afero.Fs) (*Repository, error) {
 }
 
 // Create persists a new execution and returns its identifier.
-func (r *Repository) Create(ctx context.Context, input agent.ExecutionInput, agentConfig agent.Config) (agent.ExecutionID, error) {
+func (r *Repository) Create(ctx context.Context, input briefkit.ExecutionInput, agentConfig briefkit.Config) (briefkit.ExecutionID, error) {
 	if err := input.Validate(); err != nil {
-		return agent.EmptyExecutionID, err
+		return briefkit.EmptyExecutionID, err
 	}
 
-	id := agent.NewExecutionID()
+	id := briefkit.NewExecutionID()
 	executionPath := filepath.Join(r.basePath, string(id))
 
 	if err := r.fs.MkdirAll(executionPath, os.ModePerm); err != nil { // os.ModePerm needed
-		return agent.EmptyExecutionID, err
+		return briefkit.EmptyExecutionID, err
 	}
 
 	inputFilePath := filepath.Join(executionPath, executionInputFileName)
 	if err := writeJSON(r.fs, inputFilePath, input); err != nil {
-		return agent.EmptyExecutionID, err
+		return briefkit.EmptyExecutionID, err
 	}
 
 	agentConfigFilePath := filepath.Join(executionPath, executionAgentConfigFileName)
 	if err := writeJSON(r.fs, agentConfigFilePath, agentConfig); err != nil {
-		return agent.EmptyExecutionID, err
+		return briefkit.EmptyExecutionID, err
 	}
 
 	now := time.Now()
-	status := agent.ExecutionStatus{
+	status := briefkit.ExecutionStatus{
 		CreatedAt: now,
 		UpdatedAt: now,
-		State:     agent.ExecutionCreated,
+		State:     briefkit.ExecutionCreated,
 		Attempts:  0,
 	}
 	statusFilePath := filepath.Join(executionPath, executionStatusFileName)
 	if err := writeJSON(r.fs, statusFilePath, status); err != nil {
-		return agent.EmptyExecutionID, err
+		return briefkit.EmptyExecutionID, err
 	}
 
 	return id, nil
 }
 
 // Exists reports whether an execution with the given identifier exists.
-func (r *Repository) Exists(ctx context.Context, id agent.ExecutionID) (bool, error) {
+func (r *Repository) Exists(ctx context.Context, id briefkit.ExecutionID) (bool, error) {
 	if err := id.Validate(); err != nil {
 		return false, err
 	}
@@ -88,7 +88,7 @@ func (r *Repository) Exists(ctx context.Context, id agent.ExecutionID) (bool, er
 }
 
 // Get loads the execution handle for the given identifier.
-func (r *Repository) Get(ctx context.Context, id agent.ExecutionID) (agent.Execution, error) {
+func (r *Repository) Get(ctx context.Context, id briefkit.ExecutionID) (briefkit.Execution, error) {
 	if err := id.Validate(); err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func (r *Repository) Get(ctx context.Context, id agent.ExecutionID) (agent.Execu
 	}
 
 	if !exists {
-		return nil, agent.ErrExecutionNotFound
+		return nil, briefkit.ErrExecutionNotFound
 	}
 
 	return &Execution{
@@ -110,18 +110,18 @@ func (r *Repository) Get(ctx context.Context, id agent.ExecutionID) (agent.Execu
 }
 
 // Find returns execution identifiers matching the provided filters.
-func (r *Repository) Find(ctx context.Context, filters ...agent.ExecutionFilter) ([]agent.ExecutionID, error) {
+func (r *Repository) Find(ctx context.Context, filters ...briefkit.ExecutionFilter) ([]briefkit.ExecutionID, error) {
 	_ = filters
 
 	entries, err := afero.ReadDir(r.fs, r.basePath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return []agent.ExecutionID{}, nil
+			return []briefkit.ExecutionID{}, nil
 		}
 		return nil, err
 	}
 
-	ids := make([]agent.ExecutionID, 0, len(entries))
+	ids := make([]briefkit.ExecutionID, 0, len(entries))
 	for _, entry := range entries {
 		if err := ctx.Err(); err != nil {
 			return nil, err
@@ -131,7 +131,7 @@ func (r *Repository) Find(ctx context.Context, filters ...agent.ExecutionFilter)
 			continue
 		}
 
-		id := agent.ExecutionID(entry.Name())
+		id := briefkit.ExecutionID(entry.Name())
 		if err := id.Validate(); err != nil {
 			continue
 		}
@@ -148,7 +148,7 @@ func (r *Repository) Find(ctx context.Context, filters ...agent.ExecutionFilter)
 
 // Execution is an implementation of agent.Execution for the file system store.
 type Execution struct {
-	id       agent.ExecutionID
+	id       briefkit.ExecutionID
 	basePath string
 	fs       afero.Fs
 }
@@ -174,36 +174,36 @@ func (e *Execution) statusFilePath() string {
 }
 
 // GetInput returns the stored input for the execution.
-func (e *Execution) GetInput(ctx context.Context) (agent.ExecutionInput, error) {
-	return readJSON[agent.ExecutionInput](e.fs, e.inputFilePath())
+func (e *Execution) GetInput(ctx context.Context) (briefkit.ExecutionInput, error) {
+	return readJSON[briefkit.ExecutionInput](e.fs, e.inputFilePath())
 }
 
 // GetAgentConfig returns the stored agent config for the execution.
-func (e *Execution) GetAgentConfig(ctx context.Context) (agent.Config, error) {
+func (e *Execution) GetAgentConfig(ctx context.Context) (briefkit.Config, error) {
 	exists, err := hasJSON(e.fs, e.agentConfigFilePath())
 	if err != nil {
-		return agent.Config{}, err
+		return briefkit.Config{}, err
 	}
 
 	if !exists {
-		return agent.Config{}, agent.ErrExecutionAgentConfigNotFound
+		return briefkit.Config{}, briefkit.ErrExecutionAgentConfigNotFound
 	}
 
-	return readJSON[agent.Config](e.fs, e.agentConfigFilePath())
+	return readJSON[briefkit.Config](e.fs, e.agentConfigFilePath())
 }
 
 // GetResult returns the stored result for the execution.
-func (e *Execution) GetResult(ctx context.Context) (agent.ExecutionResult, error) {
+func (e *Execution) GetResult(ctx context.Context) (briefkit.ExecutionResult, error) {
 	exists, err := hasJSON(e.fs, e.resultFilePath())
 	if err != nil {
-		return agent.ExecutionResult{}, err
+		return briefkit.ExecutionResult{}, err
 	}
 
 	if !exists {
-		return agent.ExecutionResult{}, agent.ErrExecutionNoResult
+		return briefkit.ExecutionResult{}, briefkit.ErrExecutionNoResult
 	}
 
-	return readJSON[agent.ExecutionResult](e.fs, e.resultFilePath())
+	return readJSON[briefkit.ExecutionResult](e.fs, e.resultFilePath())
 }
 
 // HasResult reports whether the execution has a stored result.
@@ -212,7 +212,7 @@ func (e *Execution) HasResult(ctx context.Context) (bool, error) {
 }
 
 // SetResult stores the result for the execution.
-func (e *Execution) SetResult(ctx context.Context, result agent.ExecutionResult) error {
+func (e *Execution) SetResult(ctx context.Context, result briefkit.ExecutionResult) error {
 	status, err := e.GetStatus(ctx)
 	if err != nil {
 		return err
@@ -223,7 +223,7 @@ func (e *Execution) SetResult(ctx context.Context, result agent.ExecutionResult)
 	}
 
 	now := time.Now()
-	status.State = agent.ExecutionSucceeded
+	status.State = briefkit.ExecutionSucceeded
 	status.FinishedAt = &now
 	status.UpdatedAt = now
 	if err := writeJSON(e.fs, e.statusFilePath(), status); err != nil {
@@ -234,12 +234,12 @@ func (e *Execution) SetResult(ctx context.Context, result agent.ExecutionResult)
 }
 
 // GetStatus returns the lifecycle status for the execution.
-func (e *Execution) GetStatus(ctx context.Context) (agent.ExecutionStatus, error) {
-	return readJSON[agent.ExecutionStatus](e.fs, e.statusFilePath())
+func (e *Execution) GetStatus(ctx context.Context) (briefkit.ExecutionStatus, error) {
+	return readJSON[briefkit.ExecutionStatus](e.fs, e.statusFilePath())
 }
 
 // UpdateStatus stores the lifecycle status for the execution.
-func (e *Execution) UpdateStatus(ctx context.Context, status agent.ExecutionStatus) error {
+func (e *Execution) UpdateStatus(ctx context.Context, status briefkit.ExecutionStatus) error {
 	status.UpdatedAt = time.Now()
 	if err := writeJSON(e.fs, e.statusFilePath(), status); err != nil {
 		return err

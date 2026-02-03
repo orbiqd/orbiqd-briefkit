@@ -1,0 +1,20 @@
+all: false
+dir: "{{.InterfaceDir}}"
+filename: "{{.InterfaceFile | trimPrefix .InterfaceDir | trimPrefix \"/\" | trimSuffix \".go\"}}_mock.go"
+force-file-write: true
+formatter: goimports
+log-level: info
+structname: "Mock{{.InterfaceName}}"
+pkgname: "{{.SrcPackageName}}"
+recursive: false
+template: testify
+template-data:
+  boilerplate-file: .mockery-boilerplate
+packages:
+  github.com/orbiqd/orbiqd-briefkit/pkg/briefkit:
+    interfaces:
+      Client:
+      Execution:
+      ExecutionRepository:
+      Runner:
+      ConfigRepository:
