@@ -2,7 +2,7 @@
 
 ## Libraries
 1. Use `github.com/iancoleman/strcase` for string case conversions.
-2. Use `github.com/reugn/go-quartz` for time-related things.
+2. Use `github.com/coder/quartz` for time-related things.
 3. Use `github.com/alecthomas/kong` for handling CLI arguments, commands and options. 
 4. Use `github.com/spf13/afero` for file system operations.
 5. Wrap `slog` attributes with helpers like `slog.String` and `slog.Int` to keep types explicit.
