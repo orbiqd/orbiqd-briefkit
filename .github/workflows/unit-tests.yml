@@ -30,7 +30,7 @@ jobs:
 
       - name: Install mockery
         run: |
-          go install github.com/vektra/mockery/v2@v2.53.5
+          go install github.com/vektra/mockery/v3@v3.5.5
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
       - name: Run tests
