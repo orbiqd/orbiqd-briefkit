@@ -10,32 +10,21 @@ CLI and an MCP server - no Python/JS - just single binary without tons of depend
 ## Overview
 
 OrbiqD BriefKit is a local orchestration tool that runs **your existing agent CLIs** directly in your current working
-directory. Agents see your repository the same way you do, with no uploads and no remote context copying.
+directory. Agents see your repository the same way you do, with no uploads and no remote context copying. BriefKit
+supports workflows where you want more than one LLM to collaborate in the same workspace.
 
-BriefKit is built for workflows where you want multiple LLMs to collaborate in the same workspace, with clean execution
-logs and local state storage.
+Current supported local agent CLIs is `claude`, `codex`, `gemini`.
 
-Supported local agent CLIs:
+**Agent-to-agent context handoff**
 
-- Claude (`claude`)
-- Codex (`codex`)
-- Gemini (`gemini`)
-
-## Shared Workspace Collaboration
-
-BriefKit launches every agent inside the same working directory, so they can read and modify the same codebase. That
-enables workflows like:
-
-### Agent-to-agent context handoff
-
-Let Codex analyze a module, then ask Gemini to validate or expand the findings from the same repo.
+Let Codex analyze a module, then ask Gemini to confirm or expand the findings from the same repo.
 
 ```bash
 briefkit-ctl ask codex "Map the auth flow and list risk points"
 briefkit-ctl ask gemini "Validate Codex findings and propose improvements"
 ```
 
-### Agent challenge
+**Agent challenge**
 
 Run the same prompt across agents and compare viewpoints.
 
@@ -45,7 +34,7 @@ briefkit-ctl ask codex "Review this PR for design issues"
 briefkit-ctl ask gemini "Review this PR for design issues"
 ```
 
-### Cross-agent review
+**Cross-agent review**
 
 Have one agent review work produced by another.
 
@@ -56,12 +45,9 @@ briefkit-ctl ask claude "Review the parser refactor for correctness and style"
 
 ## Installation
 
-### Prerequsities
+### Prerequisites
 
-At least one agent CLI installed and available on your `PATH`:
-- `claude`
-- `codex`
-- `gemini`
+At least one agent CLI installed and available on your `PATH` (`claude`, `codex`, `gemini`).
 
 ### Install binaries
 
@@ -107,12 +93,15 @@ sudo install -m 0755 "$tmpdir/briefkit-runner" /usr/bin/briefkit-runner
 
 </details>
 
-**Homebrew (macOS)**
+<details>
+<summary>Homebrew (macOS)</summary>
 
 ```bash
 brew tap orbiqd/briefkit
 brew install briefkit
 ```
+
+</details>
 
 ### Agent discovery and MCP setup
 
@@ -137,7 +126,7 @@ Setup options you may need:
 
 ## Go Library Usage
 
-BriefKit can be embedded in Go apps by providing implementations of `Runner`, `ExecutionRepository`, and `ConfigRepository`.
+You can embed BriefKit in Go apps by providing implementations of `Runner`, `ExecutionRepository`, and `ConfigRepository`.
 
 ```go
 package main
@@ -201,7 +190,7 @@ Runtime kinds:
 - `codex`
 - `gemini`
 
-Configs are created automatically by `briefkit-ctl setup` as `~/.orbiqd/briefkit/agents/<agent-id>.yaml`.
+`briefkit-ctl setup` creates configs at `~/.orbiqd/briefkit/agents/<agent-id>.yaml`.
 
 ## MCP Server
 
@@ -313,7 +302,7 @@ Flags:
 
 Problem: `briefkit-ctl setup` does not find your agent CLI.
 
-- Verify the agent binary is installed and in your PATH (`which claude`, `which codex`, `which gemini`).
+- Verify the agent binary is in your PATH (`which claude`, `which codex`, `which gemini`).
 
 Problem: `briefkit-ctl ask` fails with missing agent config.
 

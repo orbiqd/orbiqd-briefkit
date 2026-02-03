@@ -11,3 +11,6 @@ dist/
 
 # Other
 *.out
+
+# Vale
+.github/styles/write-good/
