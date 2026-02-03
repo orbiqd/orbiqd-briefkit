@@ -68,6 +68,32 @@ archives:
           - zip
     name_template: "briefkit_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
+nfpms:
+  - id: briefkit
+    package_name: briefkit
+    vendor: OrbiqD
+    homepage: https://github.com/orbiqd/orbiqd-briefkit
+    maintainer: OrbiqD <support@orbiqd.com>
+    description: Local orchestration tool for subscription-based coding CLIs
+    license: MIT
+    formats:
+      - deb
+      - rpm
+    bindir: /usr/bin
+    contents:
+      - src: LICENSE
+        dst: /usr/share/doc/briefkit/LICENSE
+        file_info:
+          mode: 0644
+      - src: README.md
+        dst: /usr/share/doc/briefkit/README.md
+        file_info:
+          mode: 0644
+    ids:
+      - briefkit-ctl
+      - briefkit-mcp
+      - briefkit-runner
+
 checksum:
   name_template: "checksums.txt"
   algorithm: sha256
