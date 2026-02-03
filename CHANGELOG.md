@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.0](https://github.com/orbiqd/orbiqd-briefkit/compare/v0.4.0...v0.5.0) (2026-02-03)
+
+
+### Features
+
+* **api:** public client interface ([#34](https://github.com/orbiqd/orbiqd-briefkit/issues/34)) ([704c6b3](https://github.com/orbiqd/orbiqd-briefkit/commit/704c6b323b5e7f4f989ef554665d40e2f4db7486))
+
+
+### Code Refactoring
+
+* **cli:** rename exec command to ask ([#31](https://github.com/orbiqd/orbiqd-briefkit/issues/31)) ([fd276b7](https://github.com/orbiqd/orbiqd-briefkit/commit/fd276b7efb90f8db3a2b4af048cf02d133106f76))
+
 ## [0.4.0](https://github.com/orbiqd/orbiqd-briefkit/compare/v0.3.1...v0.4.0) (2026-01-31)
 
 
