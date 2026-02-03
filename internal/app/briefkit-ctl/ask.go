@@ -11,8 +11,7 @@ import (
 
 // AskCmd runs a prompt with specified model and options.
 type AskCmd struct {
-	Auto           bool                     `help:"Enable automatic mode"`
-	Timeout        time.Duration            `default:"5m"`
+	Timeout        *time.Duration           `help:""`
 	Model          *string                  `help:"Select model for execution."`
 	ConversationID *briefkit.ConversationID `help:"Conversation ID for execution."`
 
@@ -21,7 +20,21 @@ type AskCmd struct {
 }
 
 func (command *AskCmd) Run(ctx context.Context, client briefkit.Client) error {
-	result, err := client.Ask(ctx, command.AgentID, command.Prompt)
+	var askOptions []briefkit.AskOption
+
+	if command.Timeout != nil {
+		askOptions = append(askOptions, briefkit.AskWithTimeout(*command.Timeout))
+	}
+
+	if command.ConversationID != nil {
+		askOptions = append(askOptions, briefkit.AskWithConversationID(*command.ConversationID))
+	}
+
+	if command.Model != nil {
+		askOptions = append(askOptions, briefkit.AskWithModel(*command.Model))
+	}
+
+	result, err := client.Ask(ctx, command.AgentID, command.Prompt, askOptions...)
 	if err != nil {
 		return fmt.Errorf("ask: %w", err)
 	}
