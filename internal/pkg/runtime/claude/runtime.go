@@ -122,7 +122,8 @@ func (runtime *Runtime) RegisterMCPServer(ctx context.Context, serverName briefk
 	removeOutput, removeErr := exec.CommandContext(ctx, path, "mcp", "remove", "--scope", "user", name).CombinedOutput()
 	if removeErr != nil {
 		outputStr := strings.ToLower(strings.TrimSpace(string(removeOutput)))
-		if !strings.Contains(outputStr, "no mcp server found") {
+		isMCPServerNotFound := strings.Contains(outputStr, "no") && strings.Contains(outputStr, "mcp server") && strings.Contains(outputStr, "found")
+		if !isMCPServerNotFound {
 			return fmt.Errorf("claude mcp server removal: %s", strings.TrimSpace(string(removeOutput)))
 		}
 	}

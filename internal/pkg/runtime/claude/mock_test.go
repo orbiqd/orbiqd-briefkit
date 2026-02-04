@@ -128,8 +128,9 @@ type claudeMockConfig struct {
 	VersionFail     bool
 	VersionNoSemver bool
 
-	MCPNotFound    bool
-	MCPRemoveFail  bool
+	MCPNotFound       bool
+	MCPNotFoundScoped bool
+	MCPRemoveFail     bool
 	MCPAddFail     bool
 	MCPAddNoOutput bool
 }
@@ -157,8 +158,9 @@ func loadClaudeMockConfig() claudeMockConfig {
 		VersionFail:     envBool("MOCK_CLAUDE_VERSION_FAIL"),
 		VersionNoSemver: envBool("MOCK_CLAUDE_VERSION_NO_SEMVER"),
 
-		MCPNotFound:    envBool("MOCK_CLAUDE_MCP_NOT_FOUND"),
-		MCPRemoveFail:  envBool("MOCK_CLAUDE_MCP_REMOVE_FAIL"),
+		MCPNotFound:       envBool("MOCK_CLAUDE_MCP_NOT_FOUND"),
+		MCPNotFoundScoped: envBool("MOCK_CLAUDE_MCP_NOT_FOUND_SCOPED"),
+		MCPRemoveFail:     envBool("MOCK_CLAUDE_MCP_REMOVE_FAIL"),
 		MCPAddFail:     envBool("MOCK_CLAUDE_MCP_ADD_FAIL"),
 		MCPAddNoOutput: envBool("MOCK_CLAUDE_MCP_ADD_NO_OUTPUT"),
 	}
@@ -364,6 +366,11 @@ func (cmd *claudeMockMCPRemoveCmd) Run() error {
 
 	if config.MCPNotFound {
 		_, _ = fmt.Fprintln(os.Stdout, "No MCP server found with name: "+cmd.Name)
+		os.Exit(1)
+	}
+
+	if config.MCPNotFoundScoped {
+		_, _ = fmt.Fprintln(os.Stdout, "No user-scoped MCP server found with name: "+cmd.Name)
 		os.Exit(1)
 	}
 
