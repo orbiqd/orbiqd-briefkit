@@ -51,6 +51,8 @@ briefkit-ctl ask claude "Review the parser refactor for correctness and style"
 <details>
 <summary>As an MCP Server</summary>
 
+![First run demo](recordings/first-run.gif)
+
 TODO
 
 </details>

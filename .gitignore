@@ -10,6 +10,7 @@ bin/
 dist/
 
 # Other
+.DS_Store
 *.out
 
 # Vale
