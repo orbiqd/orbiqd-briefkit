@@ -6,733 +6,323 @@
 
 ## Overview
 
-OrbiqD BriefKit is a local orchestration tool that exposes an **MCP server** to drive **subscription-based coding CLIs** (Codex / Claude Code / Gemini) — **no APIs, no API keys required**.
+BriefKit runs your local, subscription-based agent CLIs (no APIs or API keys) directly in your working directory. It
+ships as a single, self-contained CLI and an MCP server, with no Python/JS and no extra runtimes. Agents see your
+repository the same way you do, with no uploads and no remote context copying. BriefKit supports workflows where more
+than one LLM collaborates in the same workspace.
 
-**Unlike traditional MCP tools**, BriefKit runs agents in your **current working directory**, giving them immediate access to read, modify, and understand your project files—no file uploads or context copying needed.
+Currently supported local agent CLIs are `claude`, `codex`, `gemini`.
 
-Built for workflows where you want to:
-- **Give agents instant access to your local project** (they run in your workspace)
-- Run multiple coding agents from a unified interface
-- Maintain clean, explicit execution logs you can inspect and analyze
-- Integrate agents into your own tools via the MCP protocol
-- Automate multi-agent workflows with command-line scripting
+## Usage
 
-## Key Features
+<details>
+<summary>As a CLI</summary>
 
-- **Shared Workspace Context** - Agents run in your working directory with automatic access to read/modify local files, use git commands, and understand your project structure—no extra configuration needed
-- **Multiple Agent Support** - Work with Claude Code, Codex, and Gemini from one interface
-- **MCP Server** - Integrate agents into Claude Desktop or any MCP-compatible client
-- **CLI Tool** - Direct command-line access for scripting and automation
-- **Execution State Management** - Track and inspect all agent interactions
-- **Runtime Configuration** - Control features like web search and network access per agent
-- **Conversation Continuity** - Resume conversations across multiple executions
-- **Local-First** - All state stored locally on your filesystem, no external dependencies
+**Agent-to-agent context handoff**
 
-## Architecture
+Let Codex analyze a module, then ask Gemini to confirm or expand the findings from the same repo.
 
-BriefKit consists of three components:
+```bash
+briefkit-ctl ask codex "Map the auth flow and list risk points"
+briefkit-ctl ask gemini "Validate Codex findings and propose improvements"
+```
 
-- **`briefkit-ctl`** - Main CLI for direct agent interaction and management
-- **`briefkit-mcp`** - MCP server exposing agents as tools
-- **`briefkit-runner`** - Internal execution orchestrator (spawned automatically)
+**Agent challenge**
+
+Run the same prompt across agents and compare viewpoints.
+
+```bash
+briefkit-ctl ask claude "Review this PR for design issues"
+briefkit-ctl ask codex "Review this PR for design issues"
+briefkit-ctl ask gemini "Review this PR for design issues"
+```
+
+**Cross-agent review**
+
+Have one agent review work produced by another.
+
+```bash
+briefkit-ctl ask codex "Refactor the parser to reduce allocations"
+briefkit-ctl ask claude "Review the parser refactor for correctness and style"
+```
+
+</details>
+
+<details>
+<summary>As an MCP Server</summary>
+
+![First run demo](recordings/first-run.gif)
+
+Note: You don't start `briefkit-mcp` manually. `briefkit-ctl setup` registers BriefKit as an MCP server using the
+`stdio` transport, so your runtime (e.g. Claude Code) spawns it on demand.
+
+</details>
 
 ## Installation
 
 ### Prerequisites
 
-- **Go 1.22 or later**
-- **One or more supported agent CLIs installed:**
-  - [Claude Code](https://claude.ai/download) (`claude` binary)
-  - [Codex](https://codex.anthropic.com) (`codex` binary)
-  - [Gemini](https://ai.google.dev) (`gemini` binary)
+At least one agent CLI installed and available on your `PATH` (`claude`, `codex`, `gemini`).
 
-### Homebrew (macOS)
+### Install binaries
+
+<details>
+<summary>Linux (.deb)</summary>
+
+Requires `curl`, `jq`, and `dpkg`.
+
+```bash
+arch=$(uname -m); case "$arch" in x86_64|amd64) arch=amd64 ;; aarch64|arm64) arch=arm64 ;; *) echo "Unsupported arch: $arch" >&2; exit 1 ;; esac; \
+url=$(curl -sL https://api.github.com/repos/orbiqd/orbiqd-briefkit/releases/latest | jq -r ".assets[] | select(.name | endswith(\"linux_${arch}.deb\")) | .browser_download_url" | head -n1); \
+curl -L -o /tmp/briefkit.deb "$url" && sudo dpkg -i /tmp/briefkit.deb
+```
+
+</details>
+
+<details>
+<summary>Linux (.rpm)</summary>
+
+Requires `curl`, `jq`, and `rpm`.
+
+```bash
+arch=$(uname -m); case "$arch" in x86_64|amd64) arch=amd64 ;; aarch64|arm64) arch=arm64 ;; *) echo "Unsupported arch: $arch" >&2; exit 1 ;; esac; \
+url=$(curl -sL https://api.github.com/repos/orbiqd/orbiqd-briefkit/releases/latest | jq -r ".assets[] | select(.name | endswith(\"linux_${arch}.rpm\")) | .browser_download_url" | head -n1); \
+curl -L -o /tmp/briefkit.rpm "$url" && sudo rpm -i /tmp/briefkit.rpm
+```
+
+</details>
+
+<details>
+<summary>Linux (tarball to /usr/bin)</summary>
+
+Requires `curl`, `jq`, and `tar`.
+
+```bash
+arch=$(uname -m); case "$arch" in x86_64|amd64) arch=amd64 ;; aarch64|arm64) arch=arm64 ;; *) echo "Unsupported arch: $arch" >&2; exit 1 ;; esac; \
+url=$(curl -sL https://api.github.com/repos/orbiqd/orbiqd-briefkit/releases/latest | jq -r ".assets[] | select(.name | endswith(\"linux_${arch}.tar.gz\")) | .browser_download_url" | head -n1); \
+tmpdir=$(mktemp -d) && curl -L -o "$tmpdir/briefkit.tar.gz" "$url" && tar -xzf "$tmpdir/briefkit.tar.gz" -C "$tmpdir" && \
+sudo install -m 0755 "$tmpdir/briefkit-ctl" /usr/bin/briefkit-ctl && \
+sudo install -m 0755 "$tmpdir/briefkit-mcp" /usr/bin/briefkit-mcp && \
+sudo install -m 0755 "$tmpdir/briefkit-runner" /usr/bin/briefkit-runner
+```
+
+</details>
+
+<details>
+<summary>Homebrew (macOS)</summary>
 
 ```bash
 brew tap orbiqd/briefkit
 brew install briefkit
 ```
 
-This installs prebuilt binaries for macOS (arm64 and amd64). No local compilation required.
+</details>
 
-### Build from Source
+### Agent discovery and MCP setup
 
-```bash
-git clone https://github.com/orbiqd/orbiqd-briefkit
-cd orbiqd-briefkit
-make build-local
-```
-
-Local binaries will be available in `./bin/`:
-- `./bin/briefkit-ctl`
-- `./bin/briefkit-mcp`
-- `./bin/briefkit-runner`
-
-To build release artifacts for all platforms, use:
+Run setup to discover local agent CLIs, create configs, and register the MCP server with supported runtimes. This lets you ask Claude Code to run Codex, for example.
 
 ```bash
-make build-release
+briefkit-ctl setup
 ```
 
-Release binaries will be available in `./dist/` under OS/arch-specific folders.
-
-### Add to PATH (Optional)
+Ask your first prompt.
 
 ```bash
-mkdir -p ~/.local/bin
-ln -sf /path/to/orbiqd-briefkit/bin/briefkit-ctl ~/.local/bin/briefkit-ctl
-ln -sf /path/to/orbiqd-briefkit/bin/briefkit-mcp ~/.local/bin/briefkit-mcp
-ln -sf /path/to/orbiqd-briefkit/bin/briefkit-runner ~/.local/bin/briefkit-runner
-export PATH="$PATH:$HOME/.local/bin"
+briefkit-ctl ask codex "Explain the architecture of this repo."
 ```
 
-Add the PATH line to your shell profile (`~/.bashrc`, `~/.zshrc`, etc.) to make it permanent.
+Setup options you may need:
 
-## Quick Start
+- `--runtime-kind claude|codex|gemini` to limit configuration to specific runtimes
+- `--setup-agent-mcp=false` to skip MCP server registration
+- `--force` to overwrite existing agent configs
+- `--enable-sandbox=true|false` to override runtime sandbox defaults
 
-### 1. Discover Available Agents
+## Configuration and Paths
 
-BriefKit can auto-discover installed agent CLIs on your system:
+Default paths:
 
-```bash
-briefkit-ctl agent discovery
-```
+- Agent configs: `~/.orbiqd/briefkit/agents`
+- State store: `~/.orbiqd/briefkit/state`
+- Runtime logs: `~/.orbiqd/briefkit/logs/runtime`
 
-This will scan your `$PATH` for supported agent executables.
+Override paths with environment variables:
 
-### 2. Generate Default Configuration
+- `BRIEFKIT_AGENT_CONFIG_PATH`
+- `BRIEFKIT_STATE_PATH`
+- `BRIEFKIT_RUNTIME_LOG_DIR`
 
-Create configuration files for discovered agents:
-
-```bash
-briefkit-ctl agent discovery --write-default-config
-```
-
-This creates `~/.orbiqd/briefkit/agents/{agent-name}.yaml` for each discovered agent.
-
-### 3. List Configured Agents
-
-Verify your agent configurations:
-
-```bash
-briefkit-ctl agent list
-```
-
-### 4. Ask Your First Prompt
-
-Run a prompt with one of your configured agents:
-
-```bash
-briefkit-ctl ask --agent-id claude-code "What is the capital of France?"
-```
-
-The agent ID comes from the filename in `~/.orbiqd/briefkit/agents/` (e.g., `claude-code.yaml` → `claude-code`).
-
-### 5. Resume a Conversation
-
-Continue a previous conversation by using the conversation ID from the output:
-
-```bash
-briefkit-ctl ask --agent-id claude-code \
-  --conversation-id <conversation-id-from-previous-run> \
-  "Tell me more about its history"
-```
-
-## Configuration
-
-### Configuration Directory
-
-BriefKit stores all configuration and state in `~/.orbiqd/briefkit/`:
-
-```
-~/.orbiqd/briefkit/
-├── config.yaml           # Global configuration (optional)
-├── agents/               # Agent definitions
-│   ├── claude-code.yaml
-│   ├── codex.yaml
-│   └── gemini.yaml
-├── state/                # Execution state
-│   ├── executions/
-│   ├── turns/
-│   └── sessions/
-└── logs/                 # Runtime logs
-    └── runtime/
-```
-
-### Agent Configuration
-
-Each agent is configured via a YAML file in `~/.orbiqd/briefkit/agents/`. The agent ID is derived from the filename (e.g., `codex.yaml` → agent ID `codex`).
-
-#### Minimal Configuration
-
-The simplest configuration specifies only the runtime kind:
-
-```yaml
-runtime:
-  kind: claude-code  # or: codex, gemini
-  config: {}
-```
-
-#### Full Configuration with Features
-
-```yaml
-runtime:
-  kind: claude-code
-  config:
-    # Runtime-specific configuration (see below)
-  feature:
-    enableWebSearch: true      # Allow web search tool (where supported)
-    enableNetworkAccess: true  # Allow network access (where supported)
-```
-
-### Runtime-Specific Configuration
-
-#### Claude Code
-
-```yaml
-runtime:
-  kind: claude-code
-  config: {}  # No specific config options currently required
-  feature:
-    enableWebSearch: true  # Controls availability of web search tool
-```
-
-**Note:** `enableNetworkAccess` is not currently implemented for Claude Code.
-
-#### Codex
+Example agent config (`~/.orbiqd/briefkit/agents/codex.yaml`):
 
 ```yaml
 runtime:
   kind: codex
   config:
-    requireWorkspaceRepository: true  # Enforce git repository (default: true)
+    requireWorkspaceRepository: false
   feature:
-    enableWebSearch: true       # Controls web_search_request feature
-    enableNetworkAccess: true   # Controls sandbox network access
+    enableSandbox: false
 ```
 
-#### Gemini
+Runtime kinds:
 
-```yaml
-runtime:
-  kind: gemini
-  config: {}  # No specific config options currently required
-  feature:
-    enableNetworkAccess: true  # When false, runs in sandboxed mode
+- `claude`
+- `codex`
+- `gemini`
+
+`briefkit-ctl setup` creates configs at `~/.orbiqd/briefkit/agents/<agent-id>.yaml`.
+
+## MCP Server
+
+Start the MCP server:
+
+```bash
+briefkit-mcp
 ```
 
-**Note:** `enableWebSearch` is not currently implemented for Gemini.
+By default, `briefkit-ctl setup` registers the MCP server with supported runtimes. Use `--setup-agent-mcp=false` to skip registration.
 
-### Environment Variables
+## CLI Manual
 
-- **`BRIEFKIT_RUNTIME_LOG_DIR`** - Override the runtime log directory (default: `~/.orbiqd/briefkit/logs/runtime/`)
+### briefkit-ctl
 
-## CLI Reference
+Usage:
 
-### Agent Management
+```bash
+briefkit-ctl [global flags] <command>
+```
 
-#### List Agents
+Global flags:
+
+- `-v`, `--log-level` (`debug|info|warn|error`, default: `info`)
+- `--log-format` (`text-color|text-no-color|json`, default: `text-color`)
+- `--log-quiet` (disable logging)
+- `-s`, `--store-state-path` (default: `~/.orbiqd/briefkit/state`)
+- `--store-agent-config-path` (default: `~/.orbiqd/briefkit/agents`)
+- `--version` (print version)
+
+<details>
+<summary>briefkit-ctl agent list</summary>
+
+Lists configured agents (JSON output).
 
 ```bash
 briefkit-ctl agent list
 ```
 
-Lists all configured agents from `~/.orbiqd/briefkit/agents/`.
+</details>
 
-**Output includes:**
-- Agent ID
-- Runtime kind (claude-code, codex, gemini)
-- Runtime version (if available)
+<details>
+<summary>briefkit-ctl agent add</summary>
 
-#### Discover Agents
+Adds a new agent entry. Note: currently not implemented.
 
 ```bash
-briefkit-ctl agent discovery [--write-default-config] [--runtime-kind <kind>]
+briefkit-ctl agent add <id> <kind> <path>
 ```
 
-Discovers installed agent CLIs on your system by scanning `$PATH`.
+Kind values: `claude`, `codex`, `gemini`.
 
-**Options:**
-- `--write-default-config` - Automatically generate configuration files for discovered agents
-- `--runtime-kind <kind>` - Filter discovery to specific runtime(s) (can specify multiple)
+</details>
 
-**Examples:**
+<details>
+<summary>briefkit-ctl ask</summary>
+
+Runs a prompt with a configured agent.
 
 ```bash
-# Discover all supported agents
-briefkit-ctl agent discovery
-
-# Discover and create configs automatically
-briefkit-ctl agent discovery --write-default-config
-
-# Discover only Claude and Codex
-briefkit-ctl agent discovery --runtime-kind claude-code --runtime-kind codex
+briefkit-ctl ask [flags] <agent-id> <prompt>
 ```
 
-### Execution
+Flags:
 
-#### Ask Prompt
+- `--timeout` (duration, e.g. `30s`, `5m`)
+- `--model` (override model)
+- `--conversation-id` (continue a conversation)
+
+</details>
+
+<details>
+<summary>briefkit-ctl setup</summary>
+
+Auto-discovers local agent CLIs, creates configs, and optionally registers the MCP server with supported runtimes.
 
 ```bash
-briefkit-ctl ask --agent-id <id> [options] <prompt>
+briefkit-ctl setup [flags]
 ```
 
-Send a prompt to the specified agent.
+Flags:
 
-**Required:**
-- `--agent-id <id>` - Agent identifier (from `briefkit-ctl agent list`)
-- `<prompt>` - Prompt text to send
+- `--runtime-kind` (repeatable; one of `claude`, `codex`, `gemini`)
+- `--setup-agent-config` (default: `true`)
+- `--setup-agent-mcp` (default: `true`)
+- `--enable-sandbox` (set `true` or `false` to override defaults)
+- `--force` (overwrite existing configs)
 
-**Options:**
-- `--model <model>` - Override the default model for this execution
-- `--conversation-id <id>` - Resume an existing conversation
-- `--timeout <duration>` - Execution timeout (default: `5m`)
-- `--auto` - Enable automatic mode (if supported by the agent)
+</details>
 
-**Examples:**
+<details>
+<summary>briefkit-ctl state execution list</summary>
 
-```bash
-# Simple execution
-briefkit-ctl ask --agent-id codex "Analyze this codebase structure"
-
-# With model override
-briefkit-ctl ask --agent-id claude-code --model claude-opus-4 "Review this pull request"
-
-# Resume conversation
-briefkit-ctl ask --agent-id gemini --conversation-id abc123 "Continue from where we left off"
-
-# Custom timeout
-briefkit-ctl ask --agent-id codex --timeout 10m "Perform a comprehensive security audit"
-```
-
-**Output:**
-- Execution ID
-- Conversation ID (for resuming)
-- Agent response
-
-### State Management
-
-#### List Executions
+Lists stored executions (JSON output).
 
 ```bash
 briefkit-ctl state execution list
 ```
 
-Lists all execution records stored in `~/.orbiqd/briefkit/state/executions/`.
+</details>
 
-**Output includes:**
-- Execution ID
-- Agent ID
-- Status (pending, running, succeeded, failed)
-- Created timestamp
+<details>
+<summary>briefkit-ctl state execution show</summary>
 
-#### Show Execution Details
+Shows details for a single execution (JSON output).
 
 ```bash
 briefkit-ctl state execution show <execution-id>
 ```
 
-Display detailed information about a specific execution, including:
-- Full input (prompt, model, configuration)
-- Current status
-- Result (if completed)
-- Error details (if failed)
+</details>
 
-#### Create Execution
+<details>
+<summary>briefkit-ctl state execution create</summary>
 
-```bash
-briefkit-ctl state execution create [options]
-```
-
-Manually create an execution record. This is an advanced command primarily used for automation and integration scenarios.
-
-### Global Options
-
-All commands support these global options:
-
-- `--log-level <level>` - Set logging level (`debug`, `info`, `warn`, `error`)
-- `--store-dir <path>` - Override state directory (default: `~/.orbiqd/briefkit`)
-
-## MCP Server Usage
-
-BriefKit exposes all configured agents as MCP tools, enabling integration with Claude Desktop and other MCP-compatible clients.
-
-### Starting the MCP Server
+Creates a new execution record (advanced use; JSON output with execution ID).
 
 ```bash
-./bin/briefkit-mcp
+briefkit-ctl state execution create --agent-id <id> [flags] <prompt>
 ```
 
-The server will run continuously and communicate via standard input/output using the MCP protocol.
+Flags:
 
-If you built release artifacts, use the binary under `./dist/briefkit-mcp_<os>_<arch>/briefkit-mcp`.
+- `-w`, `--working-dir` (default: `.`)
+- `-t`, `--timeout` (default: `5m`)
 
-### Claude Desktop Setup
-
-#### 1. Locate Claude Desktop Configuration
-
-The configuration file location depends on your operating system:
-
-- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
-- **Linux:** `~/.config/Claude/claude_desktop_config.json`
-- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
-
-#### 2. Add BriefKit MCP Server
-
-Add the following to your Claude Desktop MCP configuration:
-
-```json
-{
-  "mcpServers": {
-    "briefkit": {
-      "command": "/absolute/path/to/briefkit-mcp"
-    }
-  }
-}
-```
-
-**Important:** Use the absolute path to your `briefkit-mcp` binary.
-
-#### 3. Restart Claude Desktop
-
-Completely quit and restart Claude Desktop for the configuration to take effect.
-
-### Workspace Context Sharing
-
-**Critical Feature:** BriefKit launches agents in the **caller's current working directory**. This is what makes BriefKit unique.
-
-When you use BriefKit tools from Claude Desktop (or any MCP client):
-- **Agents see your project files automatically** - They can read, edit, and understand your codebase without file uploads
-- **Full git integration** - Agents can run `git diff`, `git log`, `git commit` as if you ran them
-- **Contextual understanding** - Say "fix the bug in main.go" and the agent already knows where `main.go` is
-- **Seamless refactoring** - Ask "refactor the auth module" and the agent modifies your actual project files
-- **No manual context transfer** - Unlike other MCP tools, agents just work where you work
-
-**Example workflow:**
-```
-You (in Claude Desktop): Use ask_codex to analyze the authentication module
-→ Codex runs in /your/project/directory
-→ Reads auth/*.go files directly
-→ Provides analysis with full project context
-
-You: Now refactor it to use dependency injection
-→ Codex modifies files in place
-→ You can immediately test changes with your local tools
-```
-
-This workspace-native execution is **unique to BriefKit**—most MCP servers run agents in isolated contexts requiring manual file sharing.
-
-### Available MCP Tools
-
-For each configured agent, BriefKit exposes a tool following the naming pattern `ask_<agent_id>` (in snake_case).
-
-**Example tools:**
-- `ask_claude_code` - Send prompts to Claude Code
-- `ask_codex` - Send prompts to Codex
-- `ask_gemini` - Send prompts to Gemini
-
-### Tool Parameters
-
-Each tool accepts the following parameters:
-
-- **`prompt`** (required) - The instruction to send to the agent
-- **`model`** (optional) - Override the default model for this execution
-- **`conversationId`** (optional) - Resume an existing conversation session
-
-### Example Usage in Claude Desktop
-
-```
-User: Use the ask_codex tool to analyze the project structure and identify potential performance bottlenecks.
-```
-
-Claude Desktop will invoke the tool and display the results from Codex.
-
-To continue a conversation:
-
-```
-User: Use ask_codex with the conversationId from the previous response to propose optimizations.
-```
-
-### Debugging MCP Server
-
-Use the MCP Inspector for debugging the server:
-
-```bash
-make debug-briefkit-mcp
-```
-
-This requires Node.js and will open an interactive debugging interface for testing MCP tools.
-
-## Use Cases
-
-### CLI Automation
-
-Script multi-agent workflows with full workspace access:
-
-```bash
-#!/bin/bash
-# Run from your project directory - agents will have full context
-
-# Get Claude's architectural analysis
-claude_result=$(briefkit-ctl ask --agent-id claude-code "Analyze the system architecture")
-
-# Get Codex's security review
-codex_result=$(briefkit-ctl ask --agent-id codex "Review for security vulnerabilities")
-
-# Get Gemini's test coverage analysis
-gemini_result=$(briefkit-ctl ask --agent-id gemini "Analyze test coverage")
-
-# Combine results for comprehensive review
-echo "=== Multi-Agent Analysis ===" > report.md
-echo "$claude_result" >> report.md
-echo "$codex_result" >> report.md
-echo "$gemini_result" >> report.md
-```
-
-All agents run in your current directory and can read/analyze your actual project files.
-
-### MCP Integration with Workspace Context
-
-Seamlessly use multiple agents within Claude Desktop conversations with full project access:
-
-1. Open Claude Desktop **in your project directory**
-2. Ask: "Use ask_codex to analyze the authentication module"
-   - Codex runs in your workspace, reads `auth/*.go` files directly
-3. Ask: "Now use ask_codex to refactor it for dependency injection"
-   - Codex modifies your actual project files in place
-4. Ask: "Use ask_claude_code to add comprehensive tests"
-   - Claude Code sees the refactored code and creates tests in your project
-5. Continue the conversation with context from both agents—**no file uploads, no copying code**
-
-The agents work directly in your project, just like local development.
-
-### Execution Tracking
-
-All agent interactions are logged and inspectable:
-
-```bash
-# View all execution history
-briefkit-ctl state execution list
-
-# Inspect a specific execution
-briefkit-ctl state execution show <execution-id>
-
-# Or directly access the filesystem
-cat ~/.orbiqd/briefkit/state/executions/<execution-id>/result.json | jq
-```
-
-### Conversation Continuity
-
-Build long-running conversations across multiple sessions:
-
-```bash
-# Start a conversation
-RESULT=$(briefkit-ctl ask --agent-id claude-code "Let's design a new feature for user authentication")
-
-# Extract conversation ID from result
-CONV_ID=$(echo "$RESULT" | jq -r '.conversationId')
-
-# Continue later (even after restart)
-briefkit-ctl ask --agent-id claude-code --conversation-id "$CONV_ID" \
-  "Now let's add tests for the authentication feature"
-
-# Keep going
-briefkit-ctl ask --agent-id claude-code --conversation-id "$CONV_ID" \
-  "Deploy this to staging"
-```
-
-## State & Storage
-
-BriefKit maintains all state on the local filesystem for transparency and debuggability.
-
-### State Directory Structure
-
-```
-~/.orbiqd/briefkit/state/
-├── executions/<execution-id>/
-│   ├── input.json      # Execution request
-│   ├── status.json     # Current execution status
-│   └── result.json     # Final result (when complete)
-├── turns/<turn-id>/
-│   ├── request.json    # Turn request
-│   ├── response.json   # Turn response
-│   └── status.json     # Turn status
-└── sessions/<session-id>/
-    └── transcript.ndjson  # Session transcript
-```
-
-### Execution States
-
-An execution can be in one of four states:
-
-- **`pending`** - Execution created, waiting to start
-- **`running`** - Currently executing
-- **`succeeded`** - Completed successfully
-- **`failed`** - Failed with error
-
-### Inspecting State
-
-You can inspect execution state through the CLI or directly via the filesystem:
-
-```bash
-# CLI method
-briefkit-ctl state execution list
-briefkit-ctl state execution show <execution-id>
-
-# Direct filesystem access
-cat ~/.orbiqd/briefkit/state/executions/<execution-id>/status.json | jq
-cat ~/.orbiqd/briefkit/state/executions/<execution-id>/result.json | jq
-```
-
-### Runtime Logs
-
-Execution logs are stored in:
-
-```
-~/.orbiqd/briefkit/logs/runtime/<execution-id>.log
-```
-
-Override the log directory with the `BRIEFKIT_RUNTIME_LOG_DIR` environment variable:
-
-```bash
-export BRIEFKIT_RUNTIME_LOG_DIR=/tmp/briefkit-logs
-```
+</details>
 
 ## Troubleshooting
 
-### Agent Not Discovered
+<details>
+<summary>Problem: `briefkit-ctl setup` does not find your agent CLI.</summary>
 
-**Problem:** `briefkit-ctl agent discovery` doesn't find your installed agent.
+- Verify the agent binary is in your PATH (`which claude`, `which codex`, `which gemini`).
 
-**Solutions:**
-- Ensure the agent CLI is in your `$PATH` (try `which claude` or `which codex`)
-- Verify the agent binary is executable: `ls -la $(which claude)`
-- Try discovery with explicit runtime: `--runtime-kind claude-code`
-- Check that you're using the correct binary name (must be `claude`, `codex`, or `gemini`)
+</details>
 
-### Agent Config Not Found
+<details>
+<summary>Problem: `briefkit-ctl ask` fails with missing agent config.</summary>
 
-**Problem:** `briefkit-ctl ask` fails with "agent config not found" or similar error.
+- Run `briefkit-ctl setup` and confirm the agent appears in `briefkit-ctl agent list`.
 
-**Solutions:**
-- Run `briefkit-ctl agent list` to see available configured agents
-- Generate configs automatically: `briefkit-ctl agent discovery --write-default-config`
-- Manually create a config file in `~/.orbiqd/briefkit/agents/<agent-id>.yaml`
-- Verify the agent ID matches the filename without the `.yaml` extension
+</details>
 
-### Execution Timeout
+<details>
+<summary>Problem: MCP tools do not appear in your client.</summary>
 
-**Problem:** Execution times out before the agent finishes responding.
+- Ensure the MCP client points to the absolute path of `briefkit-mcp`.
+- Restart the MCP client after config changes.
 
-**Solution:**
-
-Increase the timeout with the `--timeout` flag:
-
-```bash
-briefkit-ctl ask --agent-id codex --timeout 10m "Complex analysis task"
-```
-
-Default timeout is 5 minutes. Use values like `30s`, `5m`, `1h`.
-
-### MCP Tools Not Appearing in Claude Desktop
-
-**Problem:** BriefKit tools don't show up in Claude Desktop.
-
-**Solutions:**
-- Verify the config file path (see "Claude Desktop Setup" above)
-- Use an **absolute path** to `briefkit-mcp` in the configuration
-- Check JSON syntax is valid (use a JSON validator)
-- Completely quit and restart Claude Desktop (⌘Q on macOS, not just close window)
-- Check Claude Desktop logs for errors:
-  - macOS: `~/Library/Logs/Claude/mcp*.log`
-  - Check for connection errors or path issues
-
-### View Runtime Logs
-
-**Problem:** Need to debug what's happening during agent execution.
-
-**Solution:**
-
-Runtime logs are stored per execution:
-
-```bash
-# Find your execution ID
-briefkit-ctl state execution list
-
-# View the log
-tail -f ~/.orbiqd/briefkit/logs/runtime/<execution-id>.log
-
-# Or set a custom log directory
-export BRIEFKIT_RUNTIME_LOG_DIR=/tmp/briefkit-logs
-briefkit-ctl ask --agent-id claude-code "test"
-tail -f /tmp/briefkit-logs/*.log
-```
-
-## Roadmap
-
-Features planned for future releases:
-
-- **Multi-Agent Collaboration** - Shared sessions where multiple agents can work together on the same problem with structured turn-taking and context sharing
-- **Interactive Agent Add** - CLI command to add new agents interactively with guided configuration
-- **Web Dashboard** - Web UI for monitoring executions, browsing history, and managing configurations
-- **Execution Search & Filtering** - Query past executions by agent, status, date, or content
-- **Custom Runtime Plugins** - Support for additional agent CLIs beyond the built-in three
-
-See [GitHub Issues](https://github.com/orbiqd/orbiqd-briefkit/issues) for detailed discussion and progress tracking.
-
-## Development
-
-### Development Setup
-
-```bash
-git clone https://github.com/orbiqd/orbiqd-briefkit
-cd orbiqd-briefkit
-go mod tidy
-make build-local
-go test ./...
-```
-
-### Documentation
-
-For detailed development information, see:
-
-- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Development guide, architecture, core concepts, and contribution guidelines
-- **[CLAUDE.md](CLAUDE.md)** - Instructions for Claude Code when working on this project
-- **[GEMINI.md](GEMINI.md)** - Instructions for Gemini when working on this project
-- **[AGENTS.md](AGENTS.md)** - Instructions for Codex when working on this project
-
-## Contributing
-
-Contributions are welcome! We appreciate:
-
-- Bug reports and feature requests via [GitHub Issues](https://github.com/orbiqd/orbiqd-briefkit/issues)
-- Documentation improvements
-- Pull requests for bug fixes and features
-- Sharing your use cases and workflows
-
-### Before Contributing
-
-1. Read [DEVELOPMENT.md](DEVELOPMENT.md) for coding standards and architecture
-2. Check existing issues to avoid duplicates
-3. Run tests: `go test ./...`
-4. Format code: `gofmt -w .`
-
-### Pull Request Process
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/your-feature-name`
-3. Make your changes following the coding standards
-4. Run tests and ensure they pass
-5. Commit with conventional commit messages
-6. Push to your fork and create a pull request
+</details>
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- Built on [mark3labs/mcp-go](https://github.com/mark3labs/mcp-go) for MCP server implementation
-- Uses [alecthomas/kong](https://github.com/alecthomas/kong) for CLI parsing
-- Uses [spf13/afero](https://github.com/spf13/afero) for filesystem abstraction
-- Inspired by the need for local-first AI agent orchestration
+MIT License. See [LICENSE](LICENSE).

@@ -28,5 +28,12 @@ jobs:
         with:
           install-only: true
 
+      - name: Install Vale
+        run: |
+          VALE_VERSION=3.13.0
+          curl -sSL -o /tmp/vale.tar.gz https://github.com/errata-ai/vale/releases/download/v${VALE_VERSION}/vale_${VALE_VERSION}_Linux_64-bit.tar.gz
+          tar -xzf /tmp/vale.tar.gz -C /tmp
+          sudo install -m 0755 /tmp/vale /usr/local/bin/vale
+
       - name: Build release artifacts
         run: make build-release
