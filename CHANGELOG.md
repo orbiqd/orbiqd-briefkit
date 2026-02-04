@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/orbiqd/orbiqd-briefkit/compare/v0.5.0...v0.5.1) (2026-02-04)
+
+
+### Bug Fixes
+
+* **runtime:** handle updated Claude CLI MCP server not found message ([#39](https://github.com/orbiqd/orbiqd-briefkit/issues/39)) ([c153266](https://github.com/orbiqd/orbiqd-briefkit/commit/c1532663474d598df23aab79ef4da693a52944c5))
+
 ## [0.5.0](https://github.com/orbiqd/orbiqd-briefkit/compare/v0.4.0...v0.5.0) (2026-02-03)
 
 

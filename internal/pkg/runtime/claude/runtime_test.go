@@ -132,13 +132,31 @@ func TestRuntime_RegisterMCPServer_WhenCommandMissing_ThenReturnsError(t *testin
 }
 
 func TestRuntime_RegisterMCPServer_WhenRemoveNotFound_ThenReturnsNil(t *testing.T) {
-	resetClaudeMockEnv(t)
-	setClaudeMockExecutable(t)
-	t.Setenv("MOCK_CLAUDE_MCP_NOT_FOUND", "1")
+	tests := []struct {
+		name   string
+		envVar string
+	}{
+		{
+			name:   "legacy format: No MCP server found",
+			envVar: "MOCK_CLAUDE_MCP_NOT_FOUND",
+		},
+		{
+			name:   "scoped format: No user-scoped MCP server found",
+			envVar: "MOCK_CLAUDE_MCP_NOT_FOUND_SCOPED",
+		},
+	}
 
-	err := NewRuntime().RegisterMCPServer(context.Background(), briefkit.RuntimeMCPServerName("briefkit"), validMCPServer())
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resetClaudeMockEnv(t)
+			setClaudeMockExecutable(t)
+			t.Setenv(tt.envVar, "1")
 
-	require.NoError(t, err)
+			err := NewRuntime().RegisterMCPServer(context.Background(), briefkit.RuntimeMCPServerName("briefkit"), validMCPServer())
+
+			require.NoError(t, err)
+		})
+	}
 }
 
 func TestRuntime_RegisterMCPServer_WhenRemoveFails_ThenReturnsError(t *testing.T) {
@@ -234,6 +252,7 @@ func resetClaudeMockEnv(t *testing.T) {
 		"MOCK_CLAUDE_VERSION_FAIL",
 		"MOCK_CLAUDE_VERSION_NO_SEMVER",
 		"MOCK_CLAUDE_MCP_NOT_FOUND",
+		"MOCK_CLAUDE_MCP_NOT_FOUND_SCOPED",
 		"MOCK_CLAUDE_MCP_REMOVE_FAIL",
 		"MOCK_CLAUDE_MCP_ADD_FAIL",
 		"MOCK_CLAUDE_MCP_ADD_NO_OUTPUT",
