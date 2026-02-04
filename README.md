@@ -53,7 +53,17 @@ briefkit-ctl ask claude "Review the parser refactor for correctness and style"
 
 ![First run demo](recordings/first-run.gif)
 
-TODO
+Start the MCP server:
+
+```bash
+briefkit-mcp
+```
+
+Then register it with your local agent runtimes (e.g. Claude Code) via:
+
+```bash
+briefkit-ctl setup
+```
 
 </details>
 
