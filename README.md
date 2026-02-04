@@ -15,6 +15,9 @@ Currently supported local agent CLIs are `claude`, `codex`, `gemini`.
 
 ## Usage
 
+<details>
+<summary>As a CLI</summary>
+
 **Agent-to-agent context handoff**
 
 Let Codex analyze a module, then ask Gemini to confirm or expand the findings from the same repo.
@@ -42,6 +45,15 @@ Have one agent review work produced by another.
 briefkit-ctl ask codex "Refactor the parser to reduce allocations"
 briefkit-ctl ask claude "Review the parser refactor for correctness and style"
 ```
+
+</details>
+
+<details>
+<summary>As an MCP Server</summary>
+
+TODO
+
+</details>
 
 ## Installation
 
