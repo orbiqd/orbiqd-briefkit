@@ -53,17 +53,8 @@ briefkit-ctl ask claude "Review the parser refactor for correctness and style"
 
 ![First run demo](recordings/first-run.gif)
 
-Start the MCP server:
-
-```bash
-briefkit-mcp
-```
-
-Then register it with your local agent runtimes (e.g. Claude Code) via:
-
-```bash
-briefkit-ctl setup
-```
+Note: You don't start `briefkit-mcp` manually. `briefkit-ctl setup` registers BriefKit as an MCP server using the
+`stdio` transport, so your runtime (e.g. Claude Code) spawns it on demand.
 
 </details>
 
