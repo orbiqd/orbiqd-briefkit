@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.2](https://github.com/orbiqd/orbiqd-briefkit/compare/v0.5.1...v0.5.2) (2026-02-04)
+
+
+### Documentation
+
+* restructure README for end users ([#38](https://github.com/orbiqd/orbiqd-briefkit/issues/38)) ([41c1e64](https://github.com/orbiqd/orbiqd-briefkit/commit/41c1e644e9fe8f8869a1a947ba5fb2bb8be95939))
+
 ## [0.5.1](https://github.com/orbiqd/orbiqd-briefkit/compare/v0.5.0...v0.5.1) (2026-02-04)
 
 
