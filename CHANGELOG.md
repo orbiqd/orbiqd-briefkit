@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/orbiqd/orbiqd-briefkit/compare/v0.5.2...v0.6.0) (2026-03-31)
+
+
+### Features
+
+* **config:** support per-agent execution timeout in agent config ([#43](https://github.com/orbiqd/orbiqd-briefkit/issues/43)) ([ee25998](https://github.com/orbiqd/orbiqd-briefkit/commit/ee25998468c543678ff697c6500b6203cae34536))
+
 ## [0.5.2](https://github.com/orbiqd/orbiqd-briefkit/compare/v0.5.1...v0.5.2) (2026-02-04)
 
 
