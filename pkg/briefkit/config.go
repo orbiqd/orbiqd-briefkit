@@ -3,6 +3,8 @@ package briefkit
 import (
 	"context"
 	"errors"
+
+	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
 )
 
 type Config struct {
@@ -11,6 +13,9 @@ type Config struct {
 		Config  RuntimeConfig   `json:"config"`
 		Feature RuntimeFeatures `json:"feature,omitempty"`
 	} `json:"runtime"`
+
+	// Timeout defines the default execution timeout for the agent.
+	Timeout *utils.Duration `json:"timeout,omitempty"`
 }
 
 type ConfigRepository interface {

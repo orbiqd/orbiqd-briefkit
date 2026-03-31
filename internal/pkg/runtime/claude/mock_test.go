@@ -131,8 +131,8 @@ type claudeMockConfig struct {
 	MCPNotFound       bool
 	MCPNotFoundScoped bool
 	MCPRemoveFail     bool
-	MCPAddFail     bool
-	MCPAddNoOutput bool
+	MCPAddFail        bool
+	MCPAddNoOutput    bool
 }
 
 func loadClaudeMockConfig() claudeMockConfig {
@@ -161,8 +161,8 @@ func loadClaudeMockConfig() claudeMockConfig {
 		MCPNotFound:       envBool("MOCK_CLAUDE_MCP_NOT_FOUND"),
 		MCPNotFoundScoped: envBool("MOCK_CLAUDE_MCP_NOT_FOUND_SCOPED"),
 		MCPRemoveFail:     envBool("MOCK_CLAUDE_MCP_REMOVE_FAIL"),
-		MCPAddFail:     envBool("MOCK_CLAUDE_MCP_ADD_FAIL"),
-		MCPAddNoOutput: envBool("MOCK_CLAUDE_MCP_ADD_NO_OUTPUT"),
+		MCPAddFail:        envBool("MOCK_CLAUDE_MCP_ADD_FAIL"),
+		MCPAddNoOutput:    envBool("MOCK_CLAUDE_MCP_ADD_NO_OUTPUT"),
 	}
 }
 

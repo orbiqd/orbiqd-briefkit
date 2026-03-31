@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -290,6 +291,103 @@ func TestLocalClientDefaultExecutionTimeout_WhenAsk_ThenUsesCustomTimeout(t *tes
 	require.NoError(t, err)
 	require.NotNil(t, askResult)
 	assert.Equal(t, customTimeout, time.Duration(capturedInput.Timeout))
+}
+
+func TestLocalClient_Ask_WhenConfigHasTimeout_ThenUsesConfigTimeout(t *testing.T) {
+	ctx := context.Background()
+	client, runner, executionRepository, configRepository := newLocalClientFixture(t)
+	agentID := AgentID("codex")
+	prompt := "hello"
+	configTimeout := utils.Duration(10 * time.Minute)
+	config := testConfig()
+	config.Timeout = &configTimeout
+	executionID := ExecutionID("execution-1")
+	result := ExecutionResult{Response: "done", ConversationID: ConversationID("conv-1")}
+	execution := NewMockExecution(t)
+	var capturedInput ExecutionInput
+
+	configRepository.EXPECT().Exists(ctx, agentID).Return(true, nil)
+	configRepository.EXPECT().Get(ctx, agentID).Return(config, nil)
+	executionRepository.EXPECT().Create(ctx, mock.Anything, config).
+		Run(func(ctx context.Context, input ExecutionInput, agentConfig Config) {
+			capturedInput = input
+		}).
+		Return(executionID, nil)
+	runner.EXPECT().Spawn(ctx, executionID).Return(nil)
+	runner.EXPECT().Wait(ctx, executionID).Return(nil)
+	executionRepository.EXPECT().Get(ctx, executionID).Return(execution, nil)
+	execution.EXPECT().GetResult(ctx).Return(result, nil)
+
+	askResult, err := client.Ask(ctx, agentID, prompt)
+
+	require.NoError(t, err)
+	require.NotNil(t, askResult)
+	assert.Equal(t, 10*time.Minute, time.Duration(capturedInput.Timeout))
+}
+
+func TestLocalClient_Ask_WhenConfigHasTimeoutAndOptionTimeout_ThenOptionOverridesConfig(t *testing.T) {
+	ctx := context.Background()
+	client, runner, executionRepository, configRepository := newLocalClientFixture(t)
+	agentID := AgentID("codex")
+	prompt := "hello"
+	configTimeout := utils.Duration(10 * time.Minute)
+	optionTimeout := 2 * time.Minute
+	config := testConfig()
+	config.Timeout = &configTimeout
+	executionID := ExecutionID("execution-1")
+	result := ExecutionResult{Response: "done", ConversationID: ConversationID("conv-1")}
+	execution := NewMockExecution(t)
+	var capturedInput ExecutionInput
+
+	configRepository.EXPECT().Exists(ctx, agentID).Return(true, nil)
+	configRepository.EXPECT().Get(ctx, agentID).Return(config, nil)
+	executionRepository.EXPECT().Create(ctx, mock.Anything, config).
+		Run(func(ctx context.Context, input ExecutionInput, agentConfig Config) {
+			capturedInput = input
+		}).
+		Return(executionID, nil)
+	runner.EXPECT().Spawn(ctx, executionID).Return(nil)
+	runner.EXPECT().Wait(ctx, executionID).Return(nil)
+	executionRepository.EXPECT().Get(ctx, executionID).Return(execution, nil)
+	execution.EXPECT().GetResult(ctx).Return(result, nil)
+
+	askResult, err := client.Ask(ctx, agentID, prompt, AskWithTimeout(optionTimeout))
+
+	require.NoError(t, err)
+	require.NotNil(t, askResult)
+	assert.Equal(t, optionTimeout, time.Duration(capturedInput.Timeout))
+}
+
+func TestLocalClient_Ask_WhenConfigHasZeroTimeout_ThenUsesDefaultTimeout(t *testing.T) {
+	ctx := context.Background()
+	client, runner, executionRepository, configRepository := newLocalClientFixture(t)
+	agentID := AgentID("codex")
+	prompt := "hello"
+	zeroTimeout := utils.Duration(0)
+	config := testConfig()
+	config.Timeout = &zeroTimeout
+	executionID := ExecutionID("execution-1")
+	result := ExecutionResult{Response: "done", ConversationID: ConversationID("conv-1")}
+	execution := NewMockExecution(t)
+	var capturedInput ExecutionInput
+
+	configRepository.EXPECT().Exists(ctx, agentID).Return(true, nil)
+	configRepository.EXPECT().Get(ctx, agentID).Return(config, nil)
+	executionRepository.EXPECT().Create(ctx, mock.Anything, config).
+		Run(func(ctx context.Context, input ExecutionInput, agentConfig Config) {
+			capturedInput = input
+		}).
+		Return(executionID, nil)
+	runner.EXPECT().Spawn(ctx, executionID).Return(nil)
+	runner.EXPECT().Wait(ctx, executionID).Return(nil)
+	executionRepository.EXPECT().Get(ctx, executionID).Return(execution, nil)
+	execution.EXPECT().GetResult(ctx).Return(result, nil)
+
+	askResult, err := client.Ask(ctx, agentID, prompt)
+
+	require.NoError(t, err)
+	require.NotNil(t, askResult)
+	assert.Equal(t, 5*time.Minute, time.Duration(capturedInput.Timeout))
 }
 
 func newLocalClientFixture(t *testing.T) (*LocalClient, *MockRunner, *MockExecutionRepository, *MockConfigRepository) {

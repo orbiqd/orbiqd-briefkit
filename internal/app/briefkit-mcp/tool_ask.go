@@ -3,7 +3,6 @@ package briefkit_mcp
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/iancoleman/strcase"
 	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
@@ -36,9 +35,7 @@ func createExecTool(agentId briefkit.AgentID, client briefkit.Client) mcpserver.
 			return mcp.NewToolResultError(err.Error()), nil
 		}
 
-		opts := []briefkit.AskOption{
-			briefkit.AskWithTimeout(5 * time.Minute),
-		}
+		var opts []briefkit.AskOption
 		model := request.GetString("model", "")
 		if model != "" {
 			opts = append(opts, briefkit.AskWithModel(model))

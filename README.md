@@ -162,7 +162,10 @@ runtime:
     requireWorkspaceRepository: false
   feature:
     enableSandbox: false
+timeout: 5m
 ```
+
+The `timeout` field is optional. When omitted, it defaults to `5m`. The `--timeout` flag in `briefkit-ctl ask` overrides this value.
 
 Runtime kinds:
 
