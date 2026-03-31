@@ -58,6 +58,9 @@ func (client *LocalClient) Ask(ctx context.Context, agentID AgentID, prompt stri
 	slog.Debug("Found agent config.", slog.String("runtimeKind", string(agentConfig.Runtime.Kind)))
 
 	executionTimeout := client.defaultExecutionTimeout
+	if agentConfig.Timeout != nil && time.Duration(*agentConfig.Timeout) > 0 {
+		executionTimeout = time.Duration(*agentConfig.Timeout)
+	}
 	if options.Timeout != nil {
 		executionTimeout = *options.Timeout
 	}

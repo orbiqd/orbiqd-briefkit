@@ -4,7 +4,9 @@ import (
 	"context"
 	"path/filepath"
 	"testing"
+	"time"
 
+	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/utils"
 	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -59,6 +61,61 @@ func TestConfigRepository_UpdateGet(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, config.Runtime.Kind, loaded.Runtime.Kind)
 	assert.Equal(t, config.Runtime.Config, loaded.Runtime.Config)
+}
+
+func TestConfigRepository_UpdateGet_WhenConfigHasTimeout_ThenRoundTripsCorrectly(t *testing.T) {
+	memFs := afero.NewMemMapFs()
+	basePath := "/tmp/test-agents"
+	repo, err := NewConfigRepository(basePath, memFs)
+	require.NoError(t, err)
+	ctx := context.Background()
+
+	id := briefkit.AgentID("codex-timeout")
+	configTimeout := utils.Duration(10 * time.Minute)
+	config := briefkit.Config{
+		Runtime: struct {
+			Kind    briefkit.RuntimeKind     `json:"kind"`
+			Config  briefkit.RuntimeConfig   `json:"config"`
+			Feature briefkit.RuntimeFeatures `json:"feature,omitempty"`
+		}{
+			Kind: briefkit.RuntimeKind("codex"),
+		},
+		Timeout: &configTimeout,
+	}
+
+	err = repo.Update(ctx, id, config)
+	require.NoError(t, err)
+
+	loaded, err := repo.Get(ctx, id)
+	require.NoError(t, err)
+	require.NotNil(t, loaded.Timeout)
+	assert.Equal(t, 10*time.Minute, time.Duration(*loaded.Timeout))
+}
+
+func TestConfigRepository_UpdateGet_WhenConfigWithoutTimeout_ThenTimeoutIsNil(t *testing.T) {
+	memFs := afero.NewMemMapFs()
+	basePath := "/tmp/test-agents"
+	repo, err := NewConfigRepository(basePath, memFs)
+	require.NoError(t, err)
+	ctx := context.Background()
+
+	id := briefkit.AgentID("codex-no-timeout")
+	config := briefkit.Config{
+		Runtime: struct {
+			Kind    briefkit.RuntimeKind     `json:"kind"`
+			Config  briefkit.RuntimeConfig   `json:"config"`
+			Feature briefkit.RuntimeFeatures `json:"feature,omitempty"`
+		}{
+			Kind: briefkit.RuntimeKind("codex"),
+		},
+	}
+
+	err = repo.Update(ctx, id, config)
+	require.NoError(t, err)
+
+	loaded, err := repo.Get(ctx, id)
+	require.NoError(t, err)
+	assert.Nil(t, loaded.Timeout)
 }
 
 func TestConfigRepository_Exists(t *testing.T) {
