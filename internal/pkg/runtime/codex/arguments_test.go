@@ -277,3 +277,55 @@ func TestCodexArguments_ApplyExecutionInput_WhenModelEmptyAfterTrim_ThenReturnsE
 	assert.Contains(t, err.Error(), "model cannot be empty")
 	assert.Nil(t, args.Model)
 }
+
+func TestCodexArguments_ApplyExecutionInput_WhenReasoningEffortSet_ThenAddsConfigOverride(t *testing.T) {
+	args := NewCodexArguments()
+	effort := "high"
+	input := briefkit.ExecutionInput{
+		ReasoningEffort: &effort,
+	}
+
+	err := args.ApplyExecutionInput(input)
+
+	require.NoError(t, err)
+	assert.Equal(t, "high", args.ConfigOverrides["model_reasoning_effort"])
+}
+
+func TestCodexArguments_ApplyExecutionInput_WhenReasoningEffortHasWhitespace_ThenTrimsAndSets(t *testing.T) {
+	args := NewCodexArguments()
+	effort := "  xhigh  "
+	input := briefkit.ExecutionInput{
+		ReasoningEffort: &effort,
+	}
+
+	err := args.ApplyExecutionInput(input)
+
+	require.NoError(t, err)
+	assert.Equal(t, "xhigh", args.ConfigOverrides["model_reasoning_effort"])
+}
+
+func TestCodexArguments_ApplyExecutionInput_WhenReasoningEffortNil_ThenNoConfigOverride(t *testing.T) {
+	args := NewCodexArguments()
+	input := briefkit.ExecutionInput{
+		ReasoningEffort: nil,
+	}
+
+	err := args.ApplyExecutionInput(input)
+
+	require.NoError(t, err)
+	assert.Empty(t, args.ConfigOverrides)
+}
+
+func TestCodexArguments_ApplyExecutionInput_WhenReasoningEffortEmptyAfterTrim_ThenReturnsError(t *testing.T) {
+	args := NewCodexArguments()
+	effort := "   "
+	input := briefkit.ExecutionInput{
+		ReasoningEffort: &effort,
+	}
+
+	err := args.ApplyExecutionInput(input)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "reasoningEffort cannot be empty")
+	assert.Empty(t, args.ConfigOverrides)
+}

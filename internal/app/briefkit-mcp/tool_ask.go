@@ -27,6 +27,9 @@ func createExecTool(agentId briefkit.AgentID, client briefkit.Client) mcpserver.
 		mcp.WithString("conversationId",
 			mcp.Description("Pass the 'conversationId' received from a previous execution to continue that specific session. Leave empty for new conversations."),
 		),
+		mcp.WithString("reasoningEffort",
+			mcp.Description("Optional reasoning effort override for runtimes that support it (e.g. low/medium/high/xhigh for Codex, low/medium/high/max for Claude). Not supported by Gemini."),
+		),
 	)
 
 	handler := func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -44,6 +47,11 @@ func createExecTool(agentId briefkit.AgentID, client briefkit.Client) mcpserver.
 		conversationId := request.GetString("conversationId", "")
 		if conversationId != "" {
 			opts = append(opts, briefkit.AskWithConversationID(briefkit.ConversationID(conversationId)))
+		}
+
+		reasoningEffort := request.GetString("reasoningEffort", "")
+		if reasoningEffort != "" {
+			opts = append(opts, briefkit.AskWithReasoningEffort(reasoningEffort))
 		}
 
 		result, err := client.Ask(ctx, agentId, prompt, opts...)

@@ -421,6 +421,67 @@ func TestLocalClient_Ask_WhenConfigHasNoTimeout_ThenUsesDefaultTimeout(t *testin
 	assert.Equal(t, 5*time.Minute, time.Duration(capturedInput.Timeout))
 }
 
+func TestLocalClient_Ask_WhenReasoningEffortProvided_ThenPropagatedToExecutionInput(t *testing.T) {
+	ctx := context.Background()
+	client, runner, executionRepository, configRepository := newLocalClientFixture(t)
+	agentID := AgentID("codex")
+	prompt := "hello"
+	config := testConfig()
+	executionID := ExecutionID("execution-1")
+	result := ExecutionResult{Response: "done", ConversationID: ConversationID("conv-1")}
+	execution := NewMockExecution(t)
+	var capturedInput ExecutionInput
+
+	configRepository.EXPECT().Exists(ctx, agentID).Return(true, nil)
+	configRepository.EXPECT().Get(ctx, agentID).Return(config, nil)
+	executionRepository.EXPECT().Create(ctx, mock.Anything, config).
+		Run(func(ctx context.Context, input ExecutionInput, agentConfig Config) {
+			capturedInput = input
+		}).
+		Return(executionID, nil)
+	runner.EXPECT().Spawn(ctx, executionID).Return(nil)
+	runner.EXPECT().Wait(ctx, executionID).Return(nil)
+	executionRepository.EXPECT().Get(ctx, executionID).Return(execution, nil)
+	execution.EXPECT().GetResult(ctx).Return(result, nil)
+
+	askResult, err := client.Ask(ctx, agentID, prompt, AskWithReasoningEffort("high"))
+
+	require.NoError(t, err)
+	require.NotNil(t, askResult)
+	require.NotNil(t, capturedInput.ReasoningEffort)
+	assert.Equal(t, "high", *capturedInput.ReasoningEffort)
+}
+
+func TestLocalClient_Ask_WhenReasoningEffortNil_ThenNotSetInExecutionInput(t *testing.T) {
+	ctx := context.Background()
+	client, runner, executionRepository, configRepository := newLocalClientFixture(t)
+	agentID := AgentID("codex")
+	prompt := "hello"
+	config := testConfig()
+	executionID := ExecutionID("execution-1")
+	result := ExecutionResult{Response: "done", ConversationID: ConversationID("conv-1")}
+	execution := NewMockExecution(t)
+	var capturedInput ExecutionInput
+
+	configRepository.EXPECT().Exists(ctx, agentID).Return(true, nil)
+	configRepository.EXPECT().Get(ctx, agentID).Return(config, nil)
+	executionRepository.EXPECT().Create(ctx, mock.Anything, config).
+		Run(func(ctx context.Context, input ExecutionInput, agentConfig Config) {
+			capturedInput = input
+		}).
+		Return(executionID, nil)
+	runner.EXPECT().Spawn(ctx, executionID).Return(nil)
+	runner.EXPECT().Wait(ctx, executionID).Return(nil)
+	executionRepository.EXPECT().Get(ctx, executionID).Return(execution, nil)
+	execution.EXPECT().GetResult(ctx).Return(result, nil)
+
+	askResult, err := client.Ask(ctx, agentID, prompt)
+
+	require.NoError(t, err)
+	require.NotNil(t, askResult)
+	assert.Nil(t, capturedInput.ReasoningEffort)
+}
+
 func newLocalClientFixture(t *testing.T) (*LocalClient, *MockRunner, *MockExecutionRepository, *MockConfigRepository) {
 	t.Helper()
 
