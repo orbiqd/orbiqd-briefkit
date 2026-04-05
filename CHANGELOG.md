@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/orbiqd/orbiqd-briefkit/compare/v0.6.0...v0.6.1) (2026-04-05)
+
+
+### Bug Fixes
+
+* **runtime/claude:** align model validation with codex and gemini runtimes ([#46](https://github.com/orbiqd/orbiqd-briefkit/issues/46)) ([b69a288](https://github.com/orbiqd/orbiqd-briefkit/commit/b69a288f4526f725359a4668673f91b6782b662e))
+
 ## [0.6.0](https://github.com/orbiqd/orbiqd-briefkit/compare/v0.5.2...v0.6.0) (2026-03-31)
 
 
