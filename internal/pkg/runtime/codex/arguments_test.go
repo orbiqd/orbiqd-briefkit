@@ -291,6 +291,20 @@ func TestCodexArguments_ApplyExecutionInput_WhenReasoningEffortSet_ThenAddsConfi
 	assert.Equal(t, "high", args.ConfigOverrides["model_reasoning_effort"])
 }
 
+func TestCodexArguments_ApplyExecutionInput_WhenReasoningEffortSetAndConfigOverridesNil_ThenInitializesAndSets(t *testing.T) {
+	args := &CodexArguments{}
+	effort := "xhigh"
+	input := briefkit.ExecutionInput{
+		ReasoningEffort: &effort,
+	}
+
+	err := args.ApplyExecutionInput(input)
+
+	require.NoError(t, err)
+	require.NotNil(t, args.ConfigOverrides)
+	assert.Equal(t, "xhigh", args.ConfigOverrides["model_reasoning_effort"])
+}
+
 func TestCodexArguments_ApplyExecutionInput_WhenReasoningEffortHasWhitespace_ThenTrimsAndSets(t *testing.T) {
 	args := NewCodexArguments()
 	effort := "  xhigh  "
