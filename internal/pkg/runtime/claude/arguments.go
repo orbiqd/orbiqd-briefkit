@@ -2,6 +2,7 @@ package claude
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -118,7 +119,11 @@ func (arguments *ClaudeArguments) ApplyRuntimeFeatures(features briefkit.Runtime
 
 func (arguments *ClaudeArguments) ApplyExecutionInput(executionInput briefkit.ExecutionInput) error {
 	if executionInput.Model != nil {
-		arguments.Model = executionInput.Model
+		modelValue := strings.TrimSpace(*executionInput.Model)
+		if modelValue == "" {
+			return errors.New("model cannot be empty")
+		}
+		arguments.Model = &modelValue
 	}
 
 	if executionInput.ConversationID != nil {

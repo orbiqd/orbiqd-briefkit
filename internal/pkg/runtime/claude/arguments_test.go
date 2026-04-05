@@ -111,6 +111,39 @@ func TestClaudeArguments_ApplyExecutionInput(t *testing.T) {
 		assert.Nil(t, args.Model)
 		assert.Nil(t, args.ResumeSessionID)
 	})
+
+	t.Run("trims whitespace from model", func(t *testing.T) {
+		args := NewClaudeArguments()
+		input := briefkit.ExecutionInput{
+			Model: utils.ToPointer("  claude-sonnet-4-5  "),
+		}
+
+		err := args.ApplyExecutionInput(input)
+		require.NoError(t, err)
+		assert.Equal(t, "claude-sonnet-4-5", *args.Model)
+	})
+
+	t.Run("returns error for empty model", func(t *testing.T) {
+		args := NewClaudeArguments()
+		input := briefkit.ExecutionInput{
+			Model: utils.ToPointer(""),
+		}
+
+		err := args.ApplyExecutionInput(input)
+		require.Error(t, err)
+		assert.EqualError(t, err, "model cannot be empty")
+	})
+
+	t.Run("returns error for whitespace-only model", func(t *testing.T) {
+		args := NewClaudeArguments()
+		input := briefkit.ExecutionInput{
+			Model: utils.ToPointer("   "),
+		}
+
+		err := args.ApplyExecutionInput(input)
+		require.Error(t, err)
+		assert.EqualError(t, err, "model cannot be empty")
+	})
 }
 
 func TestClaudeArguments_ApplyRuntimeFeatures(t *testing.T) {
