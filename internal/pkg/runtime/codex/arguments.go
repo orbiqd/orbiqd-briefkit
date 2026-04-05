@@ -145,7 +145,7 @@ func (arguments *CodexArguments) ApplyRuntimeFeatures(features briefkit.RuntimeF
 }
 
 // ApplyExecutionInput applies execution-specific inputs like model selection.
-// Returns error if model value is provided but empty.
+// Returns error if model or reasoning effort value is provided but empty.
 func (arguments *CodexArguments) ApplyExecutionInput(executionInput briefkit.ExecutionInput) error {
 	if executionInput.Model != nil {
 		modelValue := strings.TrimSpace(*executionInput.Model)
@@ -153,6 +153,17 @@ func (arguments *CodexArguments) ApplyExecutionInput(executionInput briefkit.Exe
 			return errors.New("model cannot be empty")
 		}
 		arguments.Model = &modelValue
+	}
+
+	if executionInput.ReasoningEffort != nil {
+		effortValue := strings.TrimSpace(*executionInput.ReasoningEffort)
+		if effortValue == "" {
+			return errors.New("reasoningEffort cannot be empty")
+		}
+		if arguments.ConfigOverrides == nil {
+			arguments.ConfigOverrides = make(map[string]any)
+		}
+		arguments.ConfigOverrides["model_reasoning_effort"] = effortValue
 	}
 
 	return nil

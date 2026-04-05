@@ -50,6 +50,11 @@ type ExecutionInput struct {
 
 	Model *string `json:"model,omitempty"`
 
+	// ReasoningEffort controls the reasoning intensity for runtimes that support it.
+	// Accepted values are runtime-specific. Nil means no override.
+	// Returns an error at execution time if the runtime does not support reasoning effort.
+	ReasoningEffort *string `json:"reasoningEffort,omitempty"`
+
 	// ConversationID continues an existing agent conversation when provided.
 	ConversationID *ConversationID `json:"conversationId,omitempty"`
 

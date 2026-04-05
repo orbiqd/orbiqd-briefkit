@@ -16,6 +16,7 @@ type ClaudeArguments struct {
 	Verbose         *bool
 	OutputFormat    *string
 	Model           *string
+	Effort          *string
 	ResumeSessionID *string
 	DisallowedTools []string
 	PermissionMode  *string
@@ -48,6 +49,10 @@ func (arguments *ClaudeArguments) ToSlice() []string {
 
 	if arguments.Model != nil {
 		list = append(list, "--model="+*arguments.Model)
+	}
+
+	if arguments.Effort != nil {
+		list = append(list, "--effort="+*arguments.Effort)
 	}
 
 	if arguments.ResumeSessionID != nil {
@@ -124,6 +129,14 @@ func (arguments *ClaudeArguments) ApplyExecutionInput(executionInput briefkit.Ex
 			return errors.New("model cannot be empty")
 		}
 		arguments.Model = &modelValue
+	}
+
+	if executionInput.ReasoningEffort != nil {
+		effortValue := strings.TrimSpace(*executionInput.ReasoningEffort)
+		if effortValue == "" {
+			return errors.New("reasoningEffort cannot be empty")
+		}
+		arguments.Effort = &effortValue
 	}
 
 	if executionInput.ConversationID != nil {

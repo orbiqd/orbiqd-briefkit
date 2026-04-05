@@ -31,6 +31,7 @@ func TestClaudeArguments_ToSlice(t *testing.T) {
 				Verbose:         utils.ToPointer(true),
 				OutputFormat:    utils.ToPointer("json"),
 				Model:           utils.ToPointer("claude-3-5-sonnet"),
+				Effort:          utils.ToPointer("high"),
 				ResumeSessionID: utils.ToPointer("session-123"),
 				DisallowedTools: []string{"WebSearch", "Bash"},
 				Settings:        map[string]any{"key": "value"},
@@ -40,6 +41,7 @@ func TestClaudeArguments_ToSlice(t *testing.T) {
 				"--verbose",
 				"--output-format=json",
 				"--model=claude-3-5-sonnet",
+				"--effort=high",
 				"--resume=session-123",
 				"--disallowed-tools=WebSearch,Bash",
 				`--settings={"key":"value"}`,
@@ -73,6 +75,15 @@ func TestClaudeArguments_ToSlice(t *testing.T) {
 			},
 			expected: []string{
 				"--permission-mode=bypassPermissions",
+			},
+		},
+		{
+			name: "effort set",
+			args: &ClaudeArguments{
+				Effort: utils.ToPointer("high"),
+			},
+			expected: []string{
+				"--effort=high",
 			},
 		},
 	}
@@ -143,6 +154,52 @@ func TestClaudeArguments_ApplyExecutionInput(t *testing.T) {
 		err := args.ApplyExecutionInput(input)
 		require.Error(t, err)
 		assert.EqualError(t, err, "model cannot be empty")
+	})
+
+	t.Run("sets effort from reasoning effort", func(t *testing.T) {
+		args := NewClaudeArguments()
+		input := briefkit.ExecutionInput{
+			ReasoningEffort: utils.ToPointer("high"),
+		}
+
+		err := args.ApplyExecutionInput(input)
+		require.NoError(t, err)
+		require.NotNil(t, args.Effort)
+		assert.Equal(t, "high", *args.Effort)
+	})
+
+	t.Run("trims whitespace from reasoning effort", func(t *testing.T) {
+		args := NewClaudeArguments()
+		input := briefkit.ExecutionInput{
+			ReasoningEffort: utils.ToPointer("  max  "),
+		}
+
+		err := args.ApplyExecutionInput(input)
+		require.NoError(t, err)
+		require.NotNil(t, args.Effort)
+		assert.Equal(t, "max", *args.Effort)
+	})
+
+	t.Run("skips nil reasoning effort", func(t *testing.T) {
+		args := NewClaudeArguments()
+		input := briefkit.ExecutionInput{
+			ReasoningEffort: nil,
+		}
+
+		err := args.ApplyExecutionInput(input)
+		require.NoError(t, err)
+		assert.Nil(t, args.Effort)
+	})
+
+	t.Run("returns error for empty reasoning effort after trim", func(t *testing.T) {
+		args := NewClaudeArguments()
+		input := briefkit.ExecutionInput{
+			ReasoningEffort: utils.ToPointer("   "),
+		}
+
+		err := args.ApplyExecutionInput(input)
+		require.EqualError(t, err, "reasoningEffort cannot be empty")
+		assert.Nil(t, args.Effort)
 	})
 }
 

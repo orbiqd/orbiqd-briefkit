@@ -16,6 +16,11 @@ type AskOptions struct {
 	// Model overrides the default model for this execution.
 	Model *string
 
+	// ReasoningEffort overrides the reasoning intensity for runtimes that support it.
+	// Accepted values are runtime-specific (e.g. low/medium/high/xhigh for Codex, low/medium/high/max for Claude).
+	// Returns an error at execution time if the runtime does not support reasoning effort.
+	ReasoningEffort *string
+
 	// Timeout limits the total execution duration.
 	Timeout *time.Duration
 }
@@ -31,6 +36,13 @@ func AskWithConversationID(conversationID ConversationID) AskOption {
 func AskWithModel(model string) AskOption {
 	return func(options *AskOptions) {
 		options.Model = &model
+	}
+}
+
+// AskWithReasoningEffort sets the reasoning effort override.
+func AskWithReasoningEffort(effort string) AskOption {
+	return func(options *AskOptions) {
+		options.ReasoningEffort = &effort
 	}
 }
 

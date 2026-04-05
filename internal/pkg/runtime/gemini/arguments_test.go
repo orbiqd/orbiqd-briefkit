@@ -239,6 +239,29 @@ func TestGeminiArguments_ApplyExecutionInput_WhenConversationIDEmptyAfterTrim_Th
 	assert.Nil(t, args.Resume)
 }
 
+func TestGeminiArguments_ApplyExecutionInput_WhenReasoningEffortSet_ThenReturnsError(t *testing.T) {
+	args := NewGeminiArguments()
+	input := briefkit.ExecutionInput{
+		ReasoningEffort: utils.ToPointer("high"),
+	}
+
+	err := args.ApplyExecutionInput(input)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "gemini runtime does not support reasoning effort")
+}
+
+func TestGeminiArguments_ApplyExecutionInput_WhenReasoningEffortNil_ThenNoError(t *testing.T) {
+	args := NewGeminiArguments()
+	input := briefkit.ExecutionInput{
+		ReasoningEffort: nil,
+	}
+
+	err := args.ApplyExecutionInput(input)
+
+	require.NoError(t, err)
+}
+
 func TestGeminiArguments_ApplyExecutionInput_WhenBothModelAndConversationID_ThenSetsBoth(t *testing.T) {
 	args := NewGeminiArguments()
 	model := "gemini-2.0-flash"

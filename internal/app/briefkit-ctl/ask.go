@@ -11,9 +11,10 @@ import (
 
 // AskCmd runs a prompt with specified model and options.
 type AskCmd struct {
-	Timeout        *time.Duration           `help:""`
-	Model          *string                  `help:"Select model for execution."`
-	ConversationID *briefkit.ConversationID `help:"Conversation ID for execution."`
+	Timeout         *time.Duration           `help:""`
+	Model           *string                  `help:"Select model for execution."`
+	ReasoningEffort *string                  `help:"Reasoning effort override for runtimes that support it (e.g. low/medium/high/xhigh for Codex, low/medium/high/max for Claude)."`
+	ConversationID  *briefkit.ConversationID `help:"Conversation ID for execution."`
 
 	AgentID briefkit.AgentID `arg:"" help:"ID of the agent." required:"true"`
 	Prompt  string           `arg:"" help:"Prompt to execute" required:"true"`
@@ -32,6 +33,10 @@ func (command *AskCmd) Run(ctx context.Context, client briefkit.Client) error {
 
 	if command.Model != nil {
 		askOptions = append(askOptions, briefkit.AskWithModel(*command.Model))
+	}
+
+	if command.ReasoningEffort != nil {
+		askOptions = append(askOptions, briefkit.AskWithReasoningEffort(*command.ReasoningEffort))
 	}
 
 	result, err := client.Ask(ctx, command.AgentID, command.Prompt, askOptions...)

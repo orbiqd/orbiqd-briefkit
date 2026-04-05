@@ -101,8 +101,13 @@ func (arguments *GeminiArguments) ApplyRuntimeFeatures(features briefkit.Runtime
 }
 
 // ApplyExecutionInput applies execution-specific inputs like model selection.
-// Returns error if model or conversationID value is provided but empty.
+// Returns error if model or conversationID value is provided but empty,
+// or if reasoningEffort is set (not supported by the Gemini runtime).
 func (arguments *GeminiArguments) ApplyExecutionInput(executionInput briefkit.ExecutionInput) error {
+	if executionInput.ReasoningEffort != nil {
+		return errors.New("gemini runtime does not support reasoning effort")
+	}
+
 	if executionInput.Model != nil {
 		modelValue := strings.TrimSpace(*executionInput.Model)
 		if modelValue == "" {
