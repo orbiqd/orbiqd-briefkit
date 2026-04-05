@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/orbiqd/orbiqd-briefkit/compare/v0.6.1...v0.7.0) (2026-04-05)
+
+
+### Features
+
+* **runtime:** support per-call reasoning effort override ([#48](https://github.com/orbiqd/orbiqd-briefkit/issues/48)) ([1d91c4b](https://github.com/orbiqd/orbiqd-briefkit/commit/1d91c4b473b7cfd8b07f141e990c97182443becd))
+
 ## [0.6.1](https://github.com/orbiqd/orbiqd-briefkit/compare/v0.6.0...v0.6.1) (2026-04-05)
 
 
