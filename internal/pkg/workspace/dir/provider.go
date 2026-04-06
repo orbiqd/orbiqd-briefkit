@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
+	aferocopy "go.nhat.io/aferocopy/v2"
+
 	"github.com/google/uuid"
 	"github.com/spf13/afero"
 
@@ -52,7 +54,13 @@ func (p *Provider) Provision(ctx context.Context, uri url.URL) (workspace.Provis
 		return workspace.ProvisionResult{}, fmt.Errorf("create run directory: %w", err)
 	}
 
-	if err := workspace.CopyDir(p.fs, srcPath, runDir); err != nil {
+	if err := aferocopy.Copy(srcPath, runDir, aferocopy.Options{
+		SrcFs:  p.fs,
+		DestFs: p.fs,
+		OnSymlink: func(_ afero.Fs, _ string) aferocopy.SymlinkAction {
+			return aferocopy.Shallow
+		},
+	}); err != nil {
 		_ = p.fs.RemoveAll(runDir)
 		return workspace.ProvisionResult{}, fmt.Errorf("copy workspace: %w", err)
 	}
