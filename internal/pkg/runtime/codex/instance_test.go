@@ -79,6 +79,17 @@ func TestInstance_New_WhenWorkingDirectoryEmpty_ThenUsesCurrentDir(t *testing.T)
 	_, _ = waitInstance(t, instance)
 }
 
+func TestInstance_Wait_WhenLargeOutput_ThenParsesSuccessfully(t *testing.T) {
+	setupCodexMock(t)
+	t.Setenv("MOCK_CODEX_LARGE_OUTPUT", "1")
+	instance := newTestInstance(t, briefkit.ExecutionInput{Prompt: "hello"})
+
+	result, err := waitInstance(t, instance)
+
+	require.NoError(t, err)
+	assert.Greater(t, len(result.Response), 64*1024)
+}
+
 func TestInstance_Run_WhenParsingSucceedsUnderVariations_ThenReturnsResult(t *testing.T) {
 	cases := []struct {
 		name string

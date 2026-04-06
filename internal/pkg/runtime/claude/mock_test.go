@@ -125,6 +125,8 @@ type claudeMockConfig struct {
 	MultiAssistant bool
 	EmptyLines     bool
 
+	LargeOutput bool
+
 	VersionFail     bool
 	VersionNoSemver bool
 
@@ -144,6 +146,7 @@ func loadClaudeMockConfig() claudeMockConfig {
 	}
 
 	return claudeMockConfig{
+		LargeOutput:    envBool("MOCK_CLAUDE_LARGE_OUTPUT"),
 		Fail:           envBool("MOCK_CLAUDE_FAIL"),
 		ExitCode:       exitCode,
 		Stderr:         os.Getenv("MOCK_CLAUDE_STDERR"),
@@ -252,6 +255,9 @@ func (cmd *claudeMockExecCmd) Run() error {
 	}
 
 	responseText := cmd.buildResponseText(prompt)
+	if config.LargeOutput {
+		responseText = strings.Repeat("x", 100_000)
+	}
 
 	if config.Signal != "" {
 		handleMockSignal(config)
