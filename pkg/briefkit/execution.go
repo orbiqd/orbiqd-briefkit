@@ -27,6 +27,9 @@ const (
 	// ExecutionStarted indicates the execution has been started.
 	ExecutionStarted ExecutionState = "started"
 
+	// ExecutionProvisioning indicates the execution is provisioning its workspace.
+	ExecutionProvisioning ExecutionState = "provisioning"
+
 	// ExecutionRunning indicates the execution is actively running.
 	ExecutionRunning ExecutionState = "running"
 
