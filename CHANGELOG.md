@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.9.0](https://github.com/orbiqd/orbiqd-briefkit/compare/v0.8.0...v0.9.0) (2026-04-06)
+
+
+### Features
+
+* **workspace:** add cwd:// provider for current working directory ([#60](https://github.com/orbiqd/orbiqd-briefkit/issues/60)) ([63d4fab](https://github.com/orbiqd/orbiqd-briefkit/commit/63d4fab124cb61deaaeda5187879e6faae6dd91c))
+
+
+### Bug Fixes
+
+* **runtime:** increase scanner buffer to 1 MB to prevent token too long errors ([#62](https://github.com/orbiqd/orbiqd-briefkit/issues/62)) ([01a0874](https://github.com/orbiqd/orbiqd-briefkit/commit/01a087429062f928666073553cd6538a9f2364b3))
+
 ## [0.8.0](https://github.com/orbiqd/orbiqd-briefkit/compare/v0.7.0...v0.8.0) (2026-04-06)
 
 
