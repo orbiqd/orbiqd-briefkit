@@ -317,6 +317,110 @@ func TestExecution_GetSetResult(t *testing.T) {
 	})
 }
 
+func TestNewExecutionRepository_WhenMkdirAllFails_ThenReturnsError(t *testing.T) {
+	readOnlyFs := afero.NewReadOnlyFs(afero.NewMemMapFs())
+
+	repo, err := NewExecutionRepository("/tmp/new-path", readOnlyFs)
+
+	require.Error(t, err)
+	require.ErrorContains(t, err, "create execution repository path")
+	assert.Nil(t, repo)
+}
+
+func TestRepository_Create_WhenFsReadOnly_ThenReturnsError(t *testing.T) {
+	memFs := afero.NewMemMapFs()
+	repo, err := NewExecutionRepository("/tmp/test-executions", memFs)
+	require.NoError(t, err)
+	repo.fs = afero.NewReadOnlyFs(memFs)
+	ctx := context.Background()
+	input := briefkit.ExecutionInput{
+		Prompt:  "test prompt",
+		Timeout: utils.Duration(5 * time.Minute),
+	}
+
+	id, err := repo.Create(ctx, input, sampleAgentConfig)
+
+	require.Error(t, err)
+	assert.Equal(t, briefkit.EmptyExecutionID, id)
+}
+
+func TestRepository_Find_WhenContextCancelled_ThenReturnsContextError(t *testing.T) {
+	memFs := afero.NewMemMapFs()
+	basePath := "/tmp/test-executions"
+	repo, err := NewExecutionRepository(basePath, memFs)
+	require.NoError(t, err)
+	require.NoError(t, memFs.MkdirAll(filepath.Join(basePath, "00000000-0000-0000-0000-000000000001"), 0o755))
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	ids, err := repo.Find(ctx)
+
+	require.ErrorIs(t, err, context.Canceled)
+	assert.Nil(t, ids)
+}
+
+func TestExecution_GetAgentConfig_WhenFileNotFound_ThenReturnsErrNotFound(t *testing.T) {
+	memFs := afero.NewMemMapFs()
+	repo, err := NewExecutionRepository("/tmp/test-executions", memFs)
+	require.NoError(t, err)
+	ctx := context.Background()
+	input := briefkit.ExecutionInput{
+		Prompt:  "test prompt",
+		Timeout: utils.Duration(5 * time.Minute),
+	}
+	id, err := repo.Create(ctx, input, sampleAgentConfig)
+	require.NoError(t, err)
+	exec, err := repo.Get(ctx, id)
+	require.NoError(t, err)
+	fsExec := exec.(*Execution)
+	require.NoError(t, memFs.Remove(fsExec.agentConfigFilePath()))
+
+	_, err = exec.GetAgentConfig(ctx)
+
+	require.ErrorIs(t, err, briefkit.ErrExecutionAgentConfigNotFound)
+}
+
+func TestExecution_SetResult_WhenStatusCorrupt_ThenReturnsError(t *testing.T) {
+	memFs := afero.NewMemMapFs()
+	repo, err := NewExecutionRepository("/tmp/test-executions", memFs)
+	require.NoError(t, err)
+	ctx := context.Background()
+	input := briefkit.ExecutionInput{
+		Prompt:  "test prompt",
+		Timeout: utils.Duration(5 * time.Minute),
+	}
+	id, err := repo.Create(ctx, input, sampleAgentConfig)
+	require.NoError(t, err)
+	exec, err := repo.Get(ctx, id)
+	require.NoError(t, err)
+	fsExec := exec.(*Execution)
+	require.NoError(t, afero.WriteFile(memFs, fsExec.statusFilePath(), []byte("{invalid json"), 0o600))
+
+	err = exec.SetResult(ctx, briefkit.ExecutionResult{})
+
+	require.Error(t, err)
+}
+
+func TestExecution_UpdateStatus_WhenWriteFails_ThenReturnsError(t *testing.T) {
+	memFs := afero.NewMemMapFs()
+	repo, err := NewExecutionRepository("/tmp/test-executions", memFs)
+	require.NoError(t, err)
+	ctx := context.Background()
+	input := briefkit.ExecutionInput{
+		Prompt:  "test prompt",
+		Timeout: utils.Duration(5 * time.Minute),
+	}
+	id, err := repo.Create(ctx, input, sampleAgentConfig)
+	require.NoError(t, err)
+	exec, err := repo.Get(ctx, id)
+	require.NoError(t, err)
+	exec.(*Execution).fs = afero.NewReadOnlyFs(memFs)
+
+	err = exec.UpdateStatus(ctx, briefkit.ExecutionStatus{State: briefkit.ExecutionRunning})
+
+	require.Error(t, err)
+}
+
 func TestExecution_UpdateStatus(t *testing.T) {
 	memFs := afero.NewMemMapFs()
 	basePath := "/tmp/test-executions"
