@@ -2,12 +2,14 @@ package cli
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/afero"
 
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/workspace"
+	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/workspace/cwd"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/workspace/dir"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/workspace/git"
 )
@@ -30,9 +32,11 @@ func CreateWorkspaceManagerFromConfig(config StoreConfig) (*workspace.Manager, e
 	fs := afero.NewOsFs()
 
 	dirProvider := dir.NewProvider(fs, runsPath)
+	cwdProvider := cwd.NewProvider(fs, runsPath, os.Getwd)
 
 	providers := map[string]workspace.Provider{
 		"dir": dirProvider,
+		"cwd": cwdProvider,
 	}
 
 	if gitProvider, err := git.NewProviderWithDefaults(runsPath); err == nil {
