@@ -9,6 +9,7 @@ import (
 
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/workspace"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/workspace/dir"
+	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/workspace/git"
 )
 
 const workspaceRunsDirName = "workspaces/runs"
@@ -30,7 +31,14 @@ func CreateWorkspaceManagerFromConfig(config StoreConfig) (*workspace.Manager, e
 
 	dirProvider := dir.NewProvider(fs, runsPath)
 
-	return workspace.NewManager(map[string]workspace.Provider{
+	providers := map[string]workspace.Provider{
 		"dir": dirProvider,
-	}), nil
+	}
+
+	if gitProvider, err := git.NewProviderWithDefaults(runsPath); err == nil {
+		providers["git+https"] = gitProvider
+		providers["git+ssh"] = gitProvider
+	}
+
+	return workspace.NewManager(providers), nil
 }
