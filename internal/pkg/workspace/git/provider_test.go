@@ -153,6 +153,13 @@ func TestProvider_Provision_WhenSuccess_ThenCleanupIsNotNil(t *testing.T) {
 	assert.NotNil(t, result.Cleanup)
 }
 
+func TestNewProviderWithDefaults_WhenGitAvailable_ThenReturnsProvider(t *testing.T) {
+	p, err := NewProviderWithDefaults(t.TempDir())
+
+	require.NoError(t, err)
+	assert.NotNil(t, p)
+}
+
 func TestProvider_Provision_WhenRunsPathCreationFails_ThenReturnsError(t *testing.T) {
 	// Create a file at the parent path so MkdirAll cannot create a directory there.
 	parent := t.TempDir()
