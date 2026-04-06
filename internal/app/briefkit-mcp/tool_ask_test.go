@@ -15,7 +15,7 @@ import (
 func TestCreateExecTool_ToolName_WhenCamelCaseAgentID_ThenSnakeCaseName(t *testing.T) {
 	client := briefkit.NewMockClient(t)
 
-	st := createExecTool("myAgent", client)
+	st := createExecTool("myAgent", client, []string{"dir"})
 
 	assert.Equal(t, "ask_my_agent", st.Tool.Name)
 }
@@ -23,7 +23,7 @@ func TestCreateExecTool_ToolName_WhenCamelCaseAgentID_ThenSnakeCaseName(t *testi
 func TestCreateExecTool_ToolName_WhenSimpleAgentID_ThenPrefixedName(t *testing.T) {
 	client := briefkit.NewMockClient(t)
 
-	st := createExecTool("codex", client)
+	st := createExecTool("codex", client, []string{"dir"})
 
 	assert.Equal(t, "ask_codex", st.Tool.Name)
 }
@@ -32,7 +32,7 @@ func TestCreateExecTool_Handler_WhenOnlyPrompt_ThenCallsAskWithoutOptions(t *tes
 	ctx := context.Background()
 	client := briefkit.NewMockClient(t)
 	agentID := briefkit.AgentID("codex")
-	st := createExecTool(agentID, client)
+	st := createExecTool(agentID, client, []string{"dir"})
 
 	req := mcp.CallToolRequest{}
 	req.Params.Arguments = map[string]any{"prompt": "hello"}
@@ -56,7 +56,7 @@ func TestCreateExecTool_Handler_WhenModelProvided_ThenPassesModelOption(t *testi
 	ctx := context.Background()
 	client := briefkit.NewMockClient(t)
 	agentID := briefkit.AgentID("codex")
-	st := createExecTool(agentID, client)
+	st := createExecTool(agentID, client, []string{"dir"})
 
 	req := mcp.CallToolRequest{}
 	req.Params.Arguments = map[string]any{
@@ -84,7 +84,7 @@ func TestCreateExecTool_Handler_WhenConversationIDProvided_ThenPassesConversatio
 	ctx := context.Background()
 	client := briefkit.NewMockClient(t)
 	agentID := briefkit.AgentID("codex")
-	st := createExecTool(agentID, client)
+	st := createExecTool(agentID, client, []string{"dir"})
 
 	req := mcp.CallToolRequest{}
 	req.Params.Arguments = map[string]any{
@@ -112,7 +112,7 @@ func TestCreateExecTool_Handler_WhenReasoningEffortProvided_ThenPassesReasoningE
 	ctx := context.Background()
 	client := briefkit.NewMockClient(t)
 	agentID := briefkit.AgentID("codex")
-	st := createExecTool(agentID, client)
+	st := createExecTool(agentID, client, []string{"dir"})
 
 	req := mcp.CallToolRequest{}
 	req.Params.Arguments = map[string]any{
@@ -140,7 +140,7 @@ func TestCreateExecTool_Handler_WhenAllParamsProvided_ThenPassesAllOptions(t *te
 	ctx := context.Background()
 	client := briefkit.NewMockClient(t)
 	agentID := briefkit.AgentID("codex")
-	st := createExecTool(agentID, client)
+	st := createExecTool(agentID, client, []string{"dir"})
 
 	req := mcp.CallToolRequest{}
 	req.Params.Arguments = map[string]any{
@@ -174,7 +174,7 @@ func TestCreateExecTool_Handler_WhenAllParamsProvided_ThenPassesAllOptions(t *te
 func TestCreateExecTool_Handler_WhenPromptMissing_ThenReturnsToolError(t *testing.T) {
 	ctx := context.Background()
 	client := briefkit.NewMockClient(t)
-	st := createExecTool("codex", client)
+	st := createExecTool("codex", client, []string{"dir"})
 
 	req := mcp.CallToolRequest{}
 	req.Params.Arguments = map[string]any{}
@@ -190,7 +190,7 @@ func TestCreateExecTool_Handler_WhenClientReturnsError_ThenReturnsToolError(t *t
 	ctx := context.Background()
 	client := briefkit.NewMockClient(t)
 	agentID := briefkit.AgentID("codex")
-	st := createExecTool(agentID, client)
+	st := createExecTool(agentID, client, []string{"dir"})
 
 	req := mcp.CallToolRequest{}
 	req.Params.Arguments = map[string]any{"prompt": "hello"}
@@ -209,7 +209,7 @@ func TestCreateExecTool_Handler_WhenSuccess_ThenResultContainsResponseAndConvers
 	ctx := context.Background()
 	client := briefkit.NewMockClient(t)
 	agentID := briefkit.AgentID("codex")
-	st := createExecTool(agentID, client)
+	st := createExecTool(agentID, client, []string{"dir"})
 
 	req := mcp.CallToolRequest{}
 	req.Params.Arguments = map[string]any{"prompt": "hello"}

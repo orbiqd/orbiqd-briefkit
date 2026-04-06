@@ -17,6 +17,15 @@ func NewManager(providers map[string]Provider) *Manager {
 	return &Manager{providers: providers}
 }
 
+// Schemes returns the URI schemes supported by registered providers (e.g. ["dir"]).
+func (m *Manager) Schemes() []string {
+	schemes := make([]string, 0, len(m.providers))
+	for scheme := range m.providers {
+		schemes = append(schemes, scheme)
+	}
+	return schemes
+}
+
 // Provision parses rawURI, selects a provider by scheme, and provisions an isolated workspace.
 // Returns ErrProviderNotFound when no provider is registered for the URI scheme.
 func (m *Manager) Provision(ctx context.Context, rawURI string) (ProvisionResult, error) {

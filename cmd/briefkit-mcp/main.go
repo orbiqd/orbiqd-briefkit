@@ -46,6 +46,12 @@ func main() {
 	}
 	ctx.BindTo(configRepository, (*briefkit.ConfigRepository)(nil))
 
+	workspaceManager, err := cli.CreateWorkspaceManagerFromConfig(command.Store)
+	if err != nil {
+		ctx.FatalIfErrorf(err)
+	}
+	ctx.Bind(workspaceManager)
+
 	runner := runtime.NewRunner(executionRepository)
 
 	localClient := briefkit.NewLocalClient(runner, executionRepository, configRepository)
