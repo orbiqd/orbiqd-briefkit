@@ -24,7 +24,7 @@ func locateExecutable(ctx context.Context) (string, error) {
 			return "", fmt.Errorf("resolve %s path: %w", envExecutablePath, err)
 		}
 
-		if _, err := os.Stat(absPath); err != nil {
+		if _, err := os.Stat(absPath); err != nil { //nolint:gosec // Path is user-supplied via env var and already resolved with filepath.Abs.
 			return "", fmt.Errorf("executable from %s not found: %w", envExecutablePath, err)
 		}
 

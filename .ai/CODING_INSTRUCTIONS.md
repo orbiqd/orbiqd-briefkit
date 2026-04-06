@@ -21,3 +21,6 @@
 ## Build and executables
 1. Use `make build` to build executables.
 2. Use executables from `./bin/` directory.
+
+## Cleanup
+1. Delete the `.tmp/` directory from the project root after completing work.

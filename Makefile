@@ -30,7 +30,7 @@ lint-codecov:
 
 lint-docs:
 	vale sync
-	vale --glob='*.md' .
+	find . -name '*.md' -not -path './.tmp/*' | xargs vale
 
 # Test
 test: lint generate-mocks

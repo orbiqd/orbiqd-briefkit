@@ -12,6 +12,7 @@ dist/
 # Other
 .DS_Store
 *.out
+.tmp/
 
 # Vale
 .github/styles/write-good/
