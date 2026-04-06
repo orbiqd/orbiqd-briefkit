@@ -120,6 +120,8 @@ type geminiMockConfig struct {
 	UnknownEvents bool
 	ErrorResult   bool
 
+	LargeOutput bool
+
 	VersionFail     bool
 	VersionNoSemver bool
 
@@ -140,6 +142,7 @@ func loadGeminiMockConfig() geminiMockConfig {
 	}
 
 	return geminiMockConfig{
+		LargeOutput:   envBool("MOCK_GEMINI_LARGE_OUTPUT"),
 		Fail:          envBool("MOCK_GEMINI_FAIL"),
 		ExitCode:      exitCode,
 		Stderr:        os.Getenv("MOCK_GEMINI_STDERR"),
@@ -275,6 +278,9 @@ func (cmd *geminiMockDefaultCmd) Run() error {
 	}
 
 	responseText := cmd.buildResponseText(prompt)
+	if config.LargeOutput {
+		responseText = strings.Repeat("x", 100_000)
+	}
 
 	if config.Signal != "" {
 		handleMockSignal(config, sessionID, model)

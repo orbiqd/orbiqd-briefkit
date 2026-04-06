@@ -138,6 +138,8 @@ type codexMockConfig struct {
 	EmptyStdin           bool
 	MixedOutput          bool
 
+	LargeOutput bool
+
 	VersionFail     bool
 	VersionNoSemver bool
 
@@ -158,6 +160,7 @@ func loadCodexMockConfig() codexMockConfig {
 	}
 
 	return codexMockConfig{
+		LargeOutput:   envBool("MOCK_CODEX_LARGE_OUTPUT"),
 		Fail:          envBool("MOCK_CODEX_FAIL"),
 		ExitCode:      exitCode,
 		Stderr:        os.Getenv("MOCK_CODEX_STDERR"),
@@ -287,6 +290,9 @@ func (cmd *codexMockExecDefaultCmd) Run() error {
 	threadID := uuid.New().String()
 
 	responseText := cmd.buildResponseText(prompt, "")
+	if config.LargeOutput {
+		responseText = strings.Repeat("x", 100_000)
+	}
 
 	if config.Signal != "" {
 		handleMockSignal(config, threadID)

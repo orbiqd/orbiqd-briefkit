@@ -32,6 +32,17 @@ func TestInstance_Wait_WhenMultipleAssistantEvents_ThenConcatenatesResponse(t *t
 	assert.Equal(t, "First part of responseSecond part of responseThird part of response", result.Response)
 }
 
+func TestInstance_Wait_WhenLargeOutput_ThenParsesSuccessfully(t *testing.T) {
+	resetClaudeMockEnv(t)
+	t.Setenv("MOCK_CLAUDE_LARGE_OUTPUT", "1")
+	instance := newTestClaudeInstance(t, briefkit.ExecutionInput{Prompt: "hello"})
+
+	result, err := waitForInstance(t, instance)
+
+	require.NoError(t, err)
+	assert.Greater(t, len(result.Response), 64*1024)
+}
+
 func TestInstance_Wait_WhenEmptyLines_ThenSkipsWithoutError(t *testing.T) {
 	resetClaudeMockEnv(t)
 	t.Setenv("MOCK_CLAUDE_EMPTY_LINES", "1")

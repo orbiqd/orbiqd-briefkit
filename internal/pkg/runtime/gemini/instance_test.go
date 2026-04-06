@@ -171,6 +171,19 @@ func TestInstanceRun_WhenGeminiFailAfterSuccess_ThenReturnsRuntimeErrorWithExitC
 	assert.Equal(t, "post-success failure", runtimeErr.Message)
 }
 
+func TestInstanceRun_WhenLargeOutput_ThenParsesSuccessfully(t *testing.T) {
+	resetGeminiMockEnv(t)
+	setGeminiMockExecutable(t)
+	t.Setenv("MOCK_GEMINI_LARGE_OUTPUT", "1")
+
+	instance, err := newInstance(context.Background(), briefkit.ExecutionID("exec-1"), briefkit.ExecutionInput{Prompt: "hello"}, RuntimeConfig{}, briefkit.RuntimeFeatures{}, t.TempDir())
+
+	require.NoError(t, err)
+	result, err := instance.Wait(context.Background())
+	require.NoError(t, err)
+	assert.Greater(t, len(result.Response), 64*1024)
+}
+
 func TestInstanceWait_WhenContextCanceled_ThenReturnsContextError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
