@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.8.0](https://github.com/orbiqd/orbiqd-briefkit/compare/v0.7.0...v0.8.0) (2026-04-06)
+
+
+### Features
+
+* **workspace:** support execution workspaces from local directory via URI ([#58](https://github.com/orbiqd/orbiqd-briefkit/issues/58)) ([5bfd4ea](https://github.com/orbiqd/orbiqd-briefkit/commit/5bfd4ea73c06aa825ce3d05186b9c684694443b4))
+* **workspace:** workspace URI support with dir:// and git+https/ssh providers ([#59](https://github.com/orbiqd/orbiqd-briefkit/issues/59)) ([1b15c65](https://github.com/orbiqd/orbiqd-briefkit/commit/1b15c6524754afdbf5166d2b8646e21213d100d3))
+
+
+### Bug Fixes
+
+* **test:** block after sending signal to prevent race in mock ([#51](https://github.com/orbiqd/orbiqd-briefkit/issues/51)) ([23a5c69](https://github.com/orbiqd/orbiqd-briefkit/commit/23a5c69a4584baa2e9d7ef1ab6073cc122db67be))
+
 ## [0.7.0](https://github.com/orbiqd/orbiqd-briefkit/compare/v0.6.1...v0.7.0) (2026-04-05)
 
 
