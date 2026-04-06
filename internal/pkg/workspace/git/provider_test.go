@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 
@@ -150,4 +151,18 @@ func TestProvider_Provision_WhenSuccess_ThenCleanupIsNotNil(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.NotNil(t, result.Cleanup)
+}
+
+func TestProvider_Provision_WhenRunsPathCreationFails_ThenReturnsError(t *testing.T) {
+	// Create a file at the parent path so MkdirAll cannot create a directory there.
+	parent := t.TempDir()
+	blocker := parent + "/blocker"
+	require.NoError(t, os.WriteFile(blocker, []byte("x"), 0o600))
+
+	stub := &stubRunner{}
+	p := NewProvider(stub, blocker+"/runs")
+
+	_, err := p.Provision(context.Background(), mustParseURI("git+https://github.com/org/repo.git"))
+
+	require.Error(t, err)
 }
