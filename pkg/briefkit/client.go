@@ -23,6 +23,11 @@ type AskOptions struct {
 
 	// Timeout limits the total execution duration.
 	Timeout *time.Duration
+
+	// Workspace is a URI identifying the workspace source for the execution.
+	// When set, the runner provisions an isolated copy and runs the agent there.
+	// Supported schemes: dir:// (e.g. dir:///path/to/project).
+	Workspace *string
 }
 
 // AskWithConversationID sets the conversation ID for continuation.
@@ -50,6 +55,13 @@ func AskWithReasoningEffort(effort string) AskOption {
 func AskWithTimeout(timeout time.Duration) AskOption {
 	return func(options *AskOptions) {
 		options.Timeout = &timeout
+	}
+}
+
+// AskWithWorkspace sets the workspace URI for isolated execution.
+func AskWithWorkspace(uri string) AskOption {
+	return func(options *AskOptions) {
+		options.Workspace = &uri
 	}
 }
 

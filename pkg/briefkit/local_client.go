@@ -66,12 +66,12 @@ func (client *LocalClient) Ask(ctx context.Context, agentID AgentID, prompt stri
 	}
 
 	executionInput := ExecutionInput{
-		WorkingDirectory: nil,
-		Timeout:          utils.Duration(executionTimeout),
-		Prompt:           prompt,
-		Model:            options.Model,
-		ReasoningEffort:  options.ReasoningEffort,
-		ConversationID:   options.ConversationID,
+		Workspace:       options.Workspace,
+		Timeout:         utils.Duration(executionTimeout),
+		Prompt:          prompt,
+		Model:           options.Model,
+		ReasoningEffort: options.ReasoningEffort,
+		ConversationID:  options.ConversationID,
 	}
 
 	executionId, err := client.executionRepository.Create(ctx, executionInput, agentConfig)

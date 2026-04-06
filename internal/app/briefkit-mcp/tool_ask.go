@@ -3,6 +3,7 @@ package briefkit_mcp
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/iancoleman/strcase"
 	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
@@ -11,8 +12,17 @@ import (
 	mcpserver "github.com/mark3labs/mcp-go/server"
 )
 
-func createExecTool(agentId briefkit.AgentID, client briefkit.Client) mcpserver.ServerTool {
+func createExecTool(agentId briefkit.AgentID, client briefkit.Client, workspaceSchemes []string) mcpserver.ServerTool {
 	toolName := "ask_" + strcase.ToSnake(string(agentId))
+
+	workspaceDesc := "Optional workspace URI. When provided, the agent works on an isolated copy of the source."
+	if len(workspaceSchemes) > 0 {
+		schemeExamples := make([]string, len(workspaceSchemes))
+		for i, s := range workspaceSchemes {
+			schemeExamples[i] = s + "://"
+		}
+		workspaceDesc += " Supported schemes: " + strings.Join(schemeExamples, ", ") + "."
+	}
 
 	tool := mcp.NewTool(toolName,
 
@@ -29,6 +39,9 @@ func createExecTool(agentId briefkit.AgentID, client briefkit.Client) mcpserver.
 		),
 		mcp.WithString("reasoningEffort",
 			mcp.Description("Optional reasoning effort override for runtimes that support it (e.g. low/medium/high/xhigh for Codex, low/medium/high/max for Claude). Not supported by Gemini."),
+		),
+		mcp.WithString("workspace",
+			mcp.Description(workspaceDesc),
 		),
 	)
 
@@ -52,6 +65,11 @@ func createExecTool(agentId briefkit.AgentID, client briefkit.Client) mcpserver.
 		reasoningEffort := request.GetString("reasoningEffort", "")
 		if reasoningEffort != "" {
 			opts = append(opts, briefkit.AskWithReasoningEffort(reasoningEffort))
+		}
+
+		workspace := request.GetString("workspace", "")
+		if workspace != "" {
+			opts = append(opts, briefkit.AskWithWorkspace(workspace))
 		}
 
 		result, err := client.Ask(ctx, agentId, prompt, opts...)

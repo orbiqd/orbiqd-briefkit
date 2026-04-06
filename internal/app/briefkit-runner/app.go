@@ -9,6 +9,7 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/cli"
+	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/workspace"
 	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 )
 
@@ -29,7 +30,7 @@ func (v VersionFlag) BeforeApply(app *kong.Kong) error {
 	return nil
 }
 
-func (command *RunnerCommand) Run(ctx context.Context, executionRepository briefkit.ExecutionRepository, runtimeRegistry briefkit.RuntimeRegistry) error {
+func (command *RunnerCommand) Run(ctx context.Context, executionRepository briefkit.ExecutionRepository, runtimeRegistry briefkit.RuntimeRegistry, workspaceManager *workspace.Manager) error {
 	slog.Info("Starting BriefKIT agent runner.", slog.String("executionID", string(command.ExecutionID)))
 
 	execution, err := executionRepository.Get(ctx, command.ExecutionID)
@@ -82,6 +83,27 @@ func (command *RunnerCommand) Run(ctx context.Context, executionRepository brief
 	executionStatus.ExitCode = nil
 	if err := execution.UpdateStatus(ctx, executionStatus); err != nil {
 		return fmt.Errorf("update execution status: %w", err)
+	}
+
+	if executionInput.Workspace != nil {
+		slog.Debug("Provisioning workspace.", slog.String("executionID", string(command.ExecutionID)), slog.String("workspace", *executionInput.Workspace))
+
+		provisionResult, err := workspaceManager.Provision(runCtx, *executionInput.Workspace)
+		if err != nil {
+			if updateErr := command.finishExecutionWithError(ctx, execution, executionStatus, err); updateErr != nil {
+				return updateErr
+			}
+			return fmt.Errorf("provision workspace: %w", err)
+		}
+
+		defer func() {
+			if cleanupErr := provisionResult.Cleanup(); cleanupErr != nil {
+				slog.Warn("Workspace cleanup failed.", slog.String("executionID", string(command.ExecutionID)), slog.Any("error", cleanupErr))
+			}
+		}()
+
+		executionInput.WorkingDirectory = &provisionResult.WorkDir
+		slog.Debug("Workspace provisioned.", slog.String("executionID", string(command.ExecutionID)), slog.String("workDir", provisionResult.WorkDir))
 	}
 
 	instance, err := runtime.Execute(runCtx, command.ExecutionID, executionInput, agentConfig)

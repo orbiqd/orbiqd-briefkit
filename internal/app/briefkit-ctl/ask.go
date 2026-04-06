@@ -15,6 +15,7 @@ type AskCmd struct {
 	Model           *string                  `help:"Select model for execution."`
 	ReasoningEffort *string                  `help:"Reasoning effort override for runtimes that support it (e.g. low/medium/high/xhigh for Codex, low/medium/high/max for Claude)."`
 	ConversationID  *briefkit.ConversationID `help:"Conversation ID for execution."`
+	Workspace       *string                  `help:"Workspace URI for isolated execution (e.g. dir:///path/to/project)."`
 
 	AgentID briefkit.AgentID `arg:"" help:"ID of the agent." required:"true"`
 	Prompt  string           `arg:"" help:"Prompt to execute" required:"true"`
@@ -37,6 +38,10 @@ func (command *AskCmd) Run(ctx context.Context, client briefkit.Client) error {
 
 	if command.ReasoningEffort != nil {
 		askOptions = append(askOptions, briefkit.AskWithReasoningEffort(*command.ReasoningEffort))
+	}
+
+	if command.Workspace != nil {
+		askOptions = append(askOptions, briefkit.AskWithWorkspace(*command.Workspace))
 	}
 
 	result, err := client.Ask(ctx, command.AgentID, command.Prompt, askOptions...)

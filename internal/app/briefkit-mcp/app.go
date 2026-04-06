@@ -6,6 +6,7 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/cli"
+	"github.com/orbiqd/orbiqd-briefkit/internal/pkg/workspace"
 	"github.com/orbiqd/orbiqd-briefkit/pkg/briefkit"
 
 	mcpserver "github.com/mark3labs/mcp-go/server"
@@ -25,11 +26,13 @@ func (v VersionFlag) BeforeApply(app *kong.Kong) error {
 	return nil
 }
 
-func (command *Command) Run(ctx context.Context, agentConfigRepository briefkit.ConfigRepository, client briefkit.Client) error {
+func (command *Command) Run(ctx context.Context, agentConfigRepository briefkit.ConfigRepository, client briefkit.Client, workspaceManager *workspace.Manager) error {
 	agentIds, err := agentConfigRepository.List(ctx)
 	if err != nil {
 		return fmt.Errorf("list agent ids: %w", err)
 	}
+
+	workspaceSchemes := workspaceManager.Schemes()
 
 	var agentExecTools []mcpserver.ServerTool
 
@@ -39,7 +42,7 @@ func (command *Command) Run(ctx context.Context, agentConfigRepository briefkit.
 			return fmt.Errorf("get agent config: %s: %w", agentId, err)
 		}
 
-		agentExecTool := createExecTool(agentId, client)
+		agentExecTool := createExecTool(agentId, client, workspaceSchemes)
 
 		agentExecTools = append(agentExecTools, agentExecTool)
 	}

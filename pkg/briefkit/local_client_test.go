@@ -208,6 +208,7 @@ func TestLocalClient_Ask_WhenSuccessWithDefaultOptions_ThenReturnsResultAndUsesD
 	assert.Equal(t, result.ConversationID, askResult.ConversationID)
 	assert.Equal(t, prompt, capturedInput.Prompt)
 	assert.Nil(t, capturedInput.WorkingDirectory)
+	assert.Nil(t, capturedInput.Workspace)
 	assert.Nil(t, capturedInput.Model)
 	assert.Nil(t, capturedInput.ConversationID)
 	assert.Equal(t, 5*time.Minute, time.Duration(capturedInput.Timeout))
@@ -450,6 +451,67 @@ func TestLocalClient_Ask_WhenReasoningEffortProvided_ThenPropagatedToExecutionIn
 	require.NotNil(t, askResult)
 	require.NotNil(t, capturedInput.ReasoningEffort)
 	assert.Equal(t, "high", *capturedInput.ReasoningEffort)
+}
+
+func TestLocalClient_Ask_WhenWorkspaceProvided_ThenPropagatedToExecutionInput(t *testing.T) {
+	ctx := context.Background()
+	client, runner, executionRepository, configRepository := newLocalClientFixture(t)
+	agentID := AgentID("codex")
+	prompt := "hello"
+	config := testConfig()
+	executionID := ExecutionID("execution-1")
+	result := ExecutionResult{Response: "done", ConversationID: ConversationID("conv-1")}
+	execution := NewMockExecution(t)
+	var capturedInput ExecutionInput
+
+	configRepository.EXPECT().Exists(ctx, agentID).Return(true, nil)
+	configRepository.EXPECT().Get(ctx, agentID).Return(config, nil)
+	executionRepository.EXPECT().Create(ctx, mock.Anything, config).
+		Run(func(ctx context.Context, input ExecutionInput, agentConfig Config) {
+			capturedInput = input
+		}).
+		Return(executionID, nil)
+	runner.EXPECT().Spawn(ctx, executionID).Return(nil)
+	runner.EXPECT().Wait(ctx, executionID).Return(nil)
+	executionRepository.EXPECT().Get(ctx, executionID).Return(execution, nil)
+	execution.EXPECT().GetResult(ctx).Return(result, nil)
+
+	askResult, err := client.Ask(ctx, agentID, prompt, AskWithWorkspace("dir:///tmp/test"))
+
+	require.NoError(t, err)
+	require.NotNil(t, askResult)
+	require.NotNil(t, capturedInput.Workspace)
+	assert.Equal(t, "dir:///tmp/test", *capturedInput.Workspace)
+}
+
+func TestLocalClient_Ask_WhenWorkspaceNil_ThenNotSetInExecutionInput(t *testing.T) {
+	ctx := context.Background()
+	client, runner, executionRepository, configRepository := newLocalClientFixture(t)
+	agentID := AgentID("codex")
+	prompt := "hello"
+	config := testConfig()
+	executionID := ExecutionID("execution-1")
+	result := ExecutionResult{Response: "done", ConversationID: ConversationID("conv-1")}
+	execution := NewMockExecution(t)
+	var capturedInput ExecutionInput
+
+	configRepository.EXPECT().Exists(ctx, agentID).Return(true, nil)
+	configRepository.EXPECT().Get(ctx, agentID).Return(config, nil)
+	executionRepository.EXPECT().Create(ctx, mock.Anything, config).
+		Run(func(ctx context.Context, input ExecutionInput, agentConfig Config) {
+			capturedInput = input
+		}).
+		Return(executionID, nil)
+	runner.EXPECT().Spawn(ctx, executionID).Return(nil)
+	runner.EXPECT().Wait(ctx, executionID).Return(nil)
+	executionRepository.EXPECT().Get(ctx, executionID).Return(execution, nil)
+	execution.EXPECT().GetResult(ctx).Return(result, nil)
+
+	askResult, err := client.Ask(ctx, agentID, prompt)
+
+	require.NoError(t, err)
+	require.NotNil(t, askResult)
+	assert.Nil(t, capturedInput.Workspace)
 }
 
 func TestLocalClient_Ask_WhenReasoningEffortNil_ThenNotSetInExecutionInput(t *testing.T) {
