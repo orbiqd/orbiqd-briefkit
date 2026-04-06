@@ -75,6 +75,11 @@ func TestExecutionState_IsFinished(t *testing.T) {
 			expected: false,
 		},
 		{
+			name:     "provisioning is not finished",
+			state:    ExecutionProvisioning,
+			expected: false,
+		},
+		{
 			name:     "succeeded is finished",
 			state:    ExecutionSucceeded,
 			expected: true,

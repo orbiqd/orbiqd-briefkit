@@ -86,6 +86,11 @@ func (command *RunnerCommand) Run(ctx context.Context, executionRepository brief
 	}
 
 	if executionInput.Workspace != nil {
+		executionStatus.State = briefkit.ExecutionProvisioning
+		if err := execution.UpdateStatus(ctx, executionStatus); err != nil {
+			return fmt.Errorf("update execution status: %w", err)
+		}
+
 		slog.Debug("Provisioning workspace.", slog.String("executionID", string(command.ExecutionID)), slog.String("workspace", *executionInput.Workspace))
 
 		provisionResult, err := workspaceManager.Provision(runCtx, *executionInput.Workspace)
