@@ -41,6 +41,12 @@ func main() {
 
 	ctx.BindTo(runtime.NewRegistry(), (*briefkit.RuntimeRegistry)(nil))
 
+	workspaceManager, err := cli.CreateWorkspaceManagerFromConfig(command.Store)
+	if err != nil {
+		ctx.FatalIfErrorf(err)
+	}
+	ctx.Bind(workspaceManager)
+
 	cliCtx := context.Background()
 	err = ctx.BindToProvider(func() (context.Context, error) {
 		return cliCtx, nil

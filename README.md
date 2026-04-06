@@ -6,10 +6,10 @@
 
 ## Overview
 
-BriefKit runs your local, subscription-based agent CLIs (no APIs or API keys) directly in your working directory. It
-ships as a single, self-contained CLI and an MCP server, with no Python/JS and no extra runtimes. Agents see your
-repository the same way you do, with no uploads and no remote context copying. BriefKit supports workflows where more
-than one LLM collaborates in the same workspace.
+BriefKit runs your local, subscription-based agent CLIs (no APIs or API keys) directly in your working directory or an
+isolated copy of any local project. It ships as a single, self-contained CLI and an MCP server, with no Python/JS and
+no extra runtimes. Agents see your repository the same way you do, with no uploads and no remote context copying.
+BriefKit supports workflows where more than one LLM collaborates in the same workspace.
 
 Currently supported local agent CLIs are `claude`, `codex`, `gemini`.
 
@@ -145,6 +145,7 @@ Default paths:
 
 - Agent configs: `~/.orbiqd/briefkit/agents`
 - State store: `~/.orbiqd/briefkit/state`
+- Workspace runs: `~/.orbiqd/briefkit/state/workspaces/runs`
 - Runtime logs: `~/.orbiqd/briefkit/logs/runtime`
 
 Override paths with environment variables:
@@ -242,6 +243,9 @@ Flags:
 - `--timeout` (duration, e.g. `30s`, `5m`)
 - `--model` (override model)
 - `--conversation-id` (continue a conversation)
+- `--workspace` (workspace URI for isolated execution, e.g. `dir:///path/to/project`)
+
+When `--workspace` is provided, the agent works on an isolated copy of the source directory. The original is never modified. When omitted, the agent runs directly in the current working directory.
 
 </details>
 
@@ -297,7 +301,7 @@ briefkit-ctl state execution create --agent-id <id> [flags] <prompt>
 
 Flags:
 
-- `-w`, `--working-dir` (default: `.`)
+- `-w`, `--workspace` (workspace URI, e.g. `dir:///path/to/project`)
 - `-t`, `--timeout` (default: `5m`)
 
 </details>

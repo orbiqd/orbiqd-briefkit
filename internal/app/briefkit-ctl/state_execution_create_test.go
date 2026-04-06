@@ -21,10 +21,9 @@ func TestStateExecutionCreateCmd_Run_MissingAgent_ReturnsError(t *testing.T) {
 	ctx := context.Background()
 
 	cmd := &StateExecutionCreateCmd{
-		AgentID:    "nonexistent",
-		Prompt:     "test prompt",
-		WorkingDir: t.TempDir(),
-		Timeout:    "5m",
+		AgentID: "nonexistent",
+		Prompt:  "test prompt",
+		Timeout: "5m",
 	}
 
 	err = cmd.Run(ctx, execRepo, configRepo)
@@ -46,10 +45,9 @@ func TestStateExecutionCreateCmd_Run_InvalidTimeout_ReturnsError(t *testing.T) {
 	require.NoError(t, configRepo.Update(ctx, "codex", agentConfig))
 
 	cmd := &StateExecutionCreateCmd{
-		AgentID:    "codex",
-		Prompt:     "test prompt",
-		WorkingDir: t.TempDir(),
-		Timeout:    "invalid",
+		AgentID: "codex",
+		Prompt:  "test prompt",
+		Timeout: "invalid",
 	}
 
 	err = cmd.Run(ctx, execRepo, configRepo)
@@ -70,12 +68,12 @@ func TestStateExecutionCreateCmd_Run_ValidInput_CreatesExecution(t *testing.T) {
 	agentConfig.Runtime.Kind = "codex"
 	require.NoError(t, configRepo.Update(ctx, "codex", agentConfig))
 
-	workingDir := t.TempDir()
+	workspaceURI := "dir:///tmp/test-project"
 	cmd := &StateExecutionCreateCmd{
-		AgentID:    "codex",
-		Prompt:     "test prompt",
-		WorkingDir: workingDir,
-		Timeout:    "5m",
+		AgentID:   "codex",
+		Prompt:    "test prompt",
+		Workspace: &workspaceURI,
+		Timeout:   "5m",
 	}
 
 	output := captureStdout(t, func() {
@@ -94,5 +92,5 @@ func TestStateExecutionCreateCmd_Run_ValidInput_CreatesExecution(t *testing.T) {
 	input, err := execution.GetInput(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, "test prompt", input.Prompt)
-	assert.Equal(t, workingDir, *input.WorkingDirectory)
+	assert.Equal(t, workspaceURI, *input.Workspace)
 }

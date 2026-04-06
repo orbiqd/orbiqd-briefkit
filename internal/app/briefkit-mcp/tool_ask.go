@@ -30,6 +30,9 @@ func createExecTool(agentId briefkit.AgentID, client briefkit.Client) mcpserver.
 		mcp.WithString("reasoningEffort",
 			mcp.Description("Optional reasoning effort override for runtimes that support it (e.g. low/medium/high/xhigh for Codex, low/medium/high/max for Claude). Not supported by Gemini."),
 		),
+		mcp.WithString("workspace",
+			mcp.Description("Optional workspace URI. When provided, the agent works on an isolated copy of the source. Supported schemes: dir:// (e.g. dir:///path/to/project)."),
+		),
 	)
 
 	handler := func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -52,6 +55,11 @@ func createExecTool(agentId briefkit.AgentID, client briefkit.Client) mcpserver.
 		reasoningEffort := request.GetString("reasoningEffort", "")
 		if reasoningEffort != "" {
 			opts = append(opts, briefkit.AskWithReasoningEffort(reasoningEffort))
+		}
+
+		workspace := request.GetString("workspace", "")
+		if workspace != "" {
+			opts = append(opts, briefkit.AskWithWorkspace(workspace))
 		}
 
 		result, err := client.Ask(ctx, agentId, prompt, opts...)

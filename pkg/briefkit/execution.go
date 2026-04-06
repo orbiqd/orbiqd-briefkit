@@ -3,6 +3,7 @@ package briefkit
 import (
 	"context"
 	"errors"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"time"
@@ -40,7 +41,14 @@ const (
 type ExecutionInput struct {
 	// WorkingDirectory is the filesystem path where the execution runs.
 	// When nil, the runtime uses the current working directory.
+	// Deprecated: use Workspace instead. Mutually exclusive with Workspace.
 	WorkingDirectory *string `json:"workingDirectory"`
+
+	// Workspace is a URI identifying the workspace source for the execution.
+	// When set, the runner provisions an isolated copy and runs the agent there.
+	// Supported schemes: dir:// (e.g. dir:///path/to/project).
+	// Mutually exclusive with WorkingDirectory.
+	Workspace *string `json:"workspace,omitempty"`
 
 	// Timeout defines the maximum allowed duration for the execution.
 	Timeout utils.Duration `json:"timeout"`
@@ -119,6 +127,8 @@ type ExecutionRepository interface {
 	// Returns ErrExecutionWorkingDirectoryRequired when the input working directory is empty.
 	// Returns ErrExecutionWorkingDirectoryInvalid when the input working directory is malformed.
 	// Returns ErrExecutionWorkingDirectoryNotAbsolute when the input working directory is not absolute.
+	// Returns ErrExecutionWorkspaceInvalid when the workspace URI is missing or malformed.
+	// Returns ErrExecutionWorkspaceMutuallyExclusive when both WorkingDirectory and Workspace are set.
 	// Returns ErrExecutionAttachmentMimeTypeRequired when an attachment MIME type is missing.
 	// Returns ErrExecutionAttachmentPathRequired when an attachment path is missing.
 	Create(ctx context.Context, input ExecutionInput, agentConfig Config) (ExecutionID, error)
@@ -216,6 +226,10 @@ func (input ExecutionInput) Validate() error {
 		return ErrExecutionTimeoutRequired
 	}
 
+	if input.WorkingDirectory != nil && input.Workspace != nil {
+		return ErrExecutionWorkspaceMutuallyExclusive
+	}
+
 	if input.WorkingDirectory != nil {
 		if strings.TrimSpace(*input.WorkingDirectory) == "" {
 			return ErrExecutionWorkingDirectoryRequired
@@ -228,6 +242,17 @@ func (input ExecutionInput) Validate() error {
 
 		if !filepath.IsAbs(expanded) {
 			return ErrExecutionWorkingDirectoryNotAbsolute
+		}
+	}
+
+	if input.Workspace != nil {
+		if strings.TrimSpace(*input.Workspace) == "" {
+			return ErrExecutionWorkspaceInvalid
+		}
+
+		parsed, err := url.Parse(*input.Workspace)
+		if err != nil || parsed.Scheme == "" {
+			return ErrExecutionWorkspaceInvalid
 		}
 	}
 
@@ -276,4 +301,10 @@ var (
 
 	// ErrExecutionAttachmentPathRequired indicates the attachment path is missing.
 	ErrExecutionAttachmentPathRequired = errors.New("execution attachment path required")
+
+	// ErrExecutionWorkspaceInvalid indicates the workspace URI is missing or malformed.
+	ErrExecutionWorkspaceInvalid = errors.New("execution workspace invalid")
+
+	// ErrExecutionWorkspaceMutuallyExclusive indicates both WorkingDirectory and Workspace are set.
+	ErrExecutionWorkspaceMutuallyExclusive = errors.New("execution workspace and working directory are mutually exclusive")
 )
