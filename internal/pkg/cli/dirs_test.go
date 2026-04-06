@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -51,6 +52,54 @@ func TestResolveRuntimeLogDir_RelativePath_ReturnsAbsolute(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.True(t, filepath.IsAbs(dir), "expected absolute path, got: %s", dir)
+}
+
+func TestResolveExecutable_WhenEnvVarSetToExistingFile_ThenReturnsEnvPath(t *testing.T) {
+	tmpDir := t.TempDir()
+	executablePath := filepath.Join(tmpDir, ExecutableMCP)
+	require.NoError(t, os.WriteFile(executablePath, []byte("#!/bin/sh"), 0o600))
+	t.Setenv("BRIEFKIT_BRIEFKIT_MCP_PATH", executablePath)
+
+	result, err := ResolveExecutable(context.Background(), ExecutableMCP)
+
+	require.NoError(t, err)
+	assert.Equal(t, executablePath, result)
+}
+
+func TestResolveExecutable_WhenEnvVarSetToNonExistentFile_ThenReturnsErrExecutableNotFound(t *testing.T) {
+	t.Setenv("BRIEFKIT_BRIEFKIT_MCP_PATH", "/nonexistent/path/briefkit-mcp")
+
+	_, err := ResolveExecutable(context.Background(), ExecutableMCP)
+
+	require.Error(t, err)
+	assert.ErrorIs(t, err, ErrExecutableNotFound)
+}
+
+func TestResolveExecutable_WhenOsExecutableFails_ThenReturnsError(t *testing.T) {
+	originalOsExecutable := osExecutable
+	osExecutable = func() (string, error) {
+		return "", errors.New("os error")
+	}
+	t.Cleanup(func() { osExecutable = originalOsExecutable })
+
+	_, err := ResolveExecutable(context.Background(), ExecutableMCP)
+
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "get executable path")
+}
+
+func TestResolveExecutable_WhenNotFoundAnywhere_ThenReturnsErrExecutableNotFound(t *testing.T) {
+	tmpDir := t.TempDir()
+	originalOsExecutable := osExecutable
+	osExecutable = func() (string, error) {
+		return filepath.Join(tmpDir, ExecutableCtl), nil
+	}
+	t.Cleanup(func() { osExecutable = originalOsExecutable })
+
+	_, err := ResolveExecutable(context.Background(), "nonexistent-briefkit-binary-xyz")
+
+	require.Error(t, err)
+	assert.ErrorIs(t, err, ErrExecutableNotFound)
 }
 
 func TestResolveExecutable_WhenCalledViaSymlink_ThenPreservesSymlinkPath(t *testing.T) {
