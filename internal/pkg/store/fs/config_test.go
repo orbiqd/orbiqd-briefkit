@@ -229,3 +229,37 @@ func TestConfigRepository_List(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, []briefkit.AgentID{"claude-code", "codex"}, ids)
 }
+
+func TestNewConfigRepository_WhenMkdirAllFails_ThenReturnsError(t *testing.T) {
+	readOnlyFs := afero.NewReadOnlyFs(afero.NewMemMapFs())
+
+	repo, err := NewConfigRepository("/tmp/new-path", readOnlyFs)
+
+	require.Error(t, err)
+	require.ErrorContains(t, err, "create agent config path")
+	assert.Nil(t, repo)
+}
+
+func TestConfigRepository_Update_WhenWriteFails_ThenReturnsError(t *testing.T) {
+	memFs := afero.NewMemMapFs()
+	repo, err := NewConfigRepository("/tmp/test-agents", memFs)
+	require.NoError(t, err)
+	repo.fs = afero.NewReadOnlyFs(memFs)
+	ctx := context.Background()
+
+	err = repo.Update(ctx, briefkit.AgentID("codex"), briefkit.Config{})
+
+	require.Error(t, err)
+}
+
+func TestConfigRepository_Get_WhenYAMLCorrupt_ThenReturnsError(t *testing.T) {
+	memFs := afero.NewMemMapFs()
+	repo, err := NewConfigRepository("/tmp/test-agents", memFs)
+	require.NoError(t, err)
+	ctx := context.Background()
+	require.NoError(t, afero.WriteFile(memFs, "/tmp/test-agents/codex.yaml", []byte(": invalid: yaml: {{"), 0o600))
+
+	_, err = repo.Get(ctx, briefkit.AgentID("codex"))
+
+	require.Error(t, err)
+}
