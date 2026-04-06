@@ -146,6 +146,50 @@ func TestExecutionInputValidate(t *testing.T) {
 		require.ErrorIs(t, err, ErrExecutionAttachmentMimeTypeRequired)
 	})
 
+	t.Run("workspace and working directory both set", func(t *testing.T) {
+		input := valid
+		workspaceURI := "dir:///tmp/project"
+		input.Workspace = &workspaceURI
+		err := input.Validate()
+		require.ErrorIs(t, err, ErrExecutionWorkspaceMutuallyExclusive)
+	})
+
+	t.Run("empty workspace", func(t *testing.T) {
+		input := valid
+		input.WorkingDirectory = nil
+		empty := "  "
+		input.Workspace = &empty
+		err := input.Validate()
+		require.ErrorIs(t, err, ErrExecutionWorkspaceInvalid)
+	})
+
+	t.Run("workspace without scheme", func(t *testing.T) {
+		input := valid
+		input.WorkingDirectory = nil
+		noScheme := "/tmp/project"
+		input.Workspace = &noScheme
+		err := input.Validate()
+		require.ErrorIs(t, err, ErrExecutionWorkspaceInvalid)
+	})
+
+	t.Run("valid workspace", func(t *testing.T) {
+		input := valid
+		input.WorkingDirectory = nil
+		workspaceURI := "dir:///tmp/project"
+		input.Workspace = &workspaceURI
+		err := input.Validate()
+		require.NoError(t, err)
+	})
+
+	t.Run("workspace with nil working directory", func(t *testing.T) {
+		input := valid
+		input.WorkingDirectory = nil
+		workspaceURI := "dir:///tmp/project"
+		input.Workspace = &workspaceURI
+		err := input.Validate()
+		require.NoError(t, err)
+	})
+
 	t.Run("tilde working directory", func(t *testing.T) {
 		home := t.TempDir()
 		t.Setenv("HOME", home)

@@ -104,17 +104,41 @@ func TestAskWithTimeout(t *testing.T) {
 	})
 }
 
+func TestAskWithWorkspace(t *testing.T) {
+	t.Run("WhenCalled_ThenSetsWorkspace", func(t *testing.T) {
+		got := applyAskOptions(AskWithWorkspace("dir:///tmp/project"))
+
+		require.NotNil(t, got.Workspace)
+		assert.Equal(t, "dir:///tmp/project", *got.Workspace)
+	})
+
+	t.Run("WhenCalledWithEmpty_ThenSetsEmptyWorkspace", func(t *testing.T) {
+		got := applyAskOptions(AskWithWorkspace(""))
+
+		require.NotNil(t, got.Workspace)
+		assert.Empty(t, *got.Workspace)
+	})
+
+	t.Run("WhenNotApplied_ThenWorkspaceIsNil", func(t *testing.T) {
+		got := applyAskOptions()
+
+		assert.Nil(t, got.Workspace)
+	})
+}
+
 func TestAskOptions_WhenMultipleOptionsApplied_ThenAllFieldsSet(t *testing.T) {
 	conversationID := ConversationID("conv-1")
 	model := "gpt-4"
 	effort := "high"
 	timeout := 2 * time.Minute
+	workspace := "dir:///tmp/project"
 
 	got := applyAskOptions(
 		AskWithConversationID(conversationID),
 		AskWithModel(model),
 		AskWithReasoningEffort(effort),
 		AskWithTimeout(timeout),
+		AskWithWorkspace(workspace),
 	)
 
 	require.NotNil(t, got.ConversationID)
@@ -125,4 +149,6 @@ func TestAskOptions_WhenMultipleOptionsApplied_ThenAllFieldsSet(t *testing.T) {
 	assert.Equal(t, effort, *got.ReasoningEffort)
 	require.NotNil(t, got.Timeout)
 	assert.Equal(t, timeout, *got.Timeout)
+	require.NotNil(t, got.Workspace)
+	assert.Equal(t, workspace, *got.Workspace)
 }

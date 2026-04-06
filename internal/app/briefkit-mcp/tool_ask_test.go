@@ -186,6 +186,61 @@ func TestCreateExecTool_Handler_WhenPromptMissing_ThenReturnsToolError(t *testin
 	assert.True(t, result.IsError)
 }
 
+func TestCreateExecTool_Handler_WhenWorkspaceProvided_ThenPassesWorkspaceOption(t *testing.T) {
+	ctx := context.Background()
+	client := briefkit.NewMockClient(t)
+	agentID := briefkit.AgentID("codex")
+	st := createExecTool(agentID, client, []string{"dir"})
+
+	req := mcp.CallToolRequest{}
+	req.Params.Arguments = map[string]any{
+		"prompt":    "hello",
+		"workspace": "dir:///tmp/project",
+	}
+
+	var gotOpts []briefkit.AskOption
+	client.EXPECT().Ask(ctx, agentID, "hello", mock.Anything).
+		Run(func(_ context.Context, _ briefkit.AgentID, _ string, opts ...briefkit.AskOption) {
+			gotOpts = append([]briefkit.AskOption(nil), opts...)
+		}).
+		Return(&briefkit.AskResult{Response: "ok"}, nil)
+
+	result, err := st.Handler(ctx, req)
+
+	require.NoError(t, err)
+	assert.False(t, result.IsError)
+	got := applyMCPAskOptions(gotOpts)
+	require.NotNil(t, got.Workspace)
+	assert.Equal(t, "dir:///tmp/project", *got.Workspace)
+}
+
+func TestCreateExecTool_Handler_WhenWorkspaceEmpty_ThenDoesNotPassWorkspaceOption(t *testing.T) {
+	ctx := context.Background()
+	client := briefkit.NewMockClient(t)
+	agentID := briefkit.AgentID("codex")
+	st := createExecTool(agentID, client, []string{"dir"})
+
+	req := mcp.CallToolRequest{}
+	req.Params.Arguments = map[string]any{
+		"prompt":    "hello",
+		"workspace": "",
+	}
+
+	var gotOpts []briefkit.AskOption
+	client.EXPECT().Ask(ctx, agentID, "hello").
+		Run(func(_ context.Context, _ briefkit.AgentID, _ string, opts ...briefkit.AskOption) {
+			gotOpts = append([]briefkit.AskOption(nil), opts...)
+		}).
+		Return(&briefkit.AskResult{Response: "ok"}, nil)
+
+	result, err := st.Handler(ctx, req)
+
+	require.NoError(t, err)
+	assert.False(t, result.IsError)
+	got := applyMCPAskOptions(gotOpts)
+	assert.Nil(t, got.Workspace)
+}
+
 func TestCreateExecTool_Handler_WhenClientReturnsError_ThenReturnsToolError(t *testing.T) {
 	ctx := context.Background()
 	client := briefkit.NewMockClient(t)
