@@ -405,4 +405,6 @@ func handleMockSignal(config claudeMockConfig) {
 		_, _ = fmt.Fprintln(os.Stderr, "unknown signal: "+config.Signal)
 		os.Exit(1)
 	}
+
+	select {}
 }
