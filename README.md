@@ -186,6 +186,95 @@ briefkit-mcp
 
 By default, `briefkit-ctl setup` registers the MCP server with supported runtimes. Use `--setup-agent-mcp=false` to skip registration.
 
+## Workspaces
+
+A workspace provides an agent with an isolated, writable copy of a codebase. The original source is never modified. After the execution finishes, the temporary copy is removed automatically.
+
+Without a workspace, the agent runs directly in the current working directory.
+
+### Execution states
+
+When a workspace is used, the execution goes through an additional state:
+
+```
+created → started → provisioning → running → succeeded / failed
+```
+
+The `provisioning` state covers the time spent preparing the workspace (copying files or cloning a repository). For large git repositories this can take a while — the state makes it visible.
+
+### Providers
+
+#### No workspace (default)
+
+The agent runs in the current working directory. Files are read and written directly.
+
+```bash
+briefkit-ctl ask codex "Explain the auth module."
+```
+
+---
+
+#### `dir://` — local directory copy
+
+Copies a local directory into a fresh per-execution directory under `~/.orbiqd/briefkit/state/workspaces/runs/`. The agent sees an exact copy of the source; changes it makes stay in the copy and are discarded at cleanup.
+
+```
+dir:///absolute/path/to/project
+```
+
+```bash
+briefkit-ctl ask claude --workspace "dir:///home/user/myproject" "Review the API surface."
+```
+
+Use this when you want to point an agent at a project that is not your current directory, or when you want to protect a local directory from agent writes.
+
+---
+
+#### `git+https://` — remote git repository over HTTPS
+
+Clones a public or private git repository into a fresh per-execution directory. Auth relies on the user's existing git credential helpers, `.netrc`, and `~/.gitconfig`. No API keys or extra configuration needed.
+
+```
+git+https://github.com/org/repo.git
+git+https://github.com/org/repo.git?ref=main
+git+https://github.com/org/repo.git?ref=v2.1.0
+git+https://github.com/org/repo.git?ref=abc1234
+```
+
+The optional `ref` query parameter selects a branch, tag, or commit. When omitted, the repository's default branch is used.
+
+```bash
+# Default branch
+briefkit-ctl ask claude --workspace "git+https://github.com/golang/example.git" "Describe this repo."
+
+# Specific branch
+briefkit-ctl ask codex --workspace "git+https://github.com/org/repo.git?ref=feature/payments" "Review the payments module."
+
+# Specific tag
+briefkit-ctl ask gemini --workspace "git+https://github.com/org/repo.git?ref=v2.1.0" "What changed in this release?"
+```
+
+---
+
+#### `git+ssh://` — remote git repository over SSH
+
+Same as `git+https://` but uses SSH. Auth relies on the user's SSH agent (`SSH_AUTH_SOCK`) and key files. No extra configuration needed if SSH access to the host already works in your terminal.
+
+```
+git+ssh://git@github.com/org/repo.git
+git+ssh://git@github.com/org/repo.git?ref=main
+```
+
+```bash
+briefkit-ctl ask claude --workspace "git+ssh://git@github.com/org/private-repo.git" "Summarize the architecture."
+```
+
+---
+
+### MCP Server
+
+When using BriefKit as an MCP server, the `workspace` parameter is available on every `ask_*` tool. The same URI formats apply.
+
 ## CLI Manual
 
 ### briefkit-ctl
@@ -243,9 +332,7 @@ Flags:
 - `--timeout` (duration, e.g. `30s`, `5m`)
 - `--model` (override model)
 - `--conversation-id` (continue a conversation)
-- `--workspace` (workspace URI for isolated execution, e.g. `dir:///path/to/project`)
-
-When `--workspace` is provided, the agent works on an isolated copy of the source directory. The original is never modified. When omitted, the agent runs directly in the current working directory.
+- `--workspace` (workspace URI; see [Workspaces](#workspaces) for supported schemes and examples)
 
 </details>
 
