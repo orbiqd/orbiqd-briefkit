@@ -3,6 +3,7 @@ package briefkitctl
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 	"time"
 
@@ -13,6 +14,77 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestStateExecutionListCmd_Run_WhenFindFails_ThenReturnsError(t *testing.T) {
+	ctx := context.Background()
+	repo := briefkit.NewMockExecutionRepository(t)
+	cmd := &StateExecutionListCmd{}
+	expectedErr := errors.New("storage error")
+
+	repo.EXPECT().Find(ctx).Return(nil, expectedErr)
+
+	err := cmd.Run(ctx, repo)
+
+	require.Error(t, err)
+	require.ErrorContains(t, err, "list executions")
+	assert.ErrorIs(t, err, expectedErr)
+}
+
+func TestStateExecutionListCmd_Run_WhenGetExecutionFails_ThenSkipsAndContinues(t *testing.T) {
+	ctx := context.Background()
+	repo := briefkit.NewMockExecutionRepository(t)
+	successExec := briefkit.NewMockExecution(t)
+	cmd := &StateExecutionListCmd{}
+
+	failID := briefkit.ExecutionID("fail-id")
+	successID := briefkit.ExecutionID("success-id")
+	status := briefkit.ExecutionStatus{State: briefkit.ExecutionCreated}
+
+	repo.EXPECT().Find(ctx).Return([]briefkit.ExecutionID{failID, successID}, nil)
+	repo.EXPECT().Get(ctx, failID).Return(nil, errors.New("not found"))
+	repo.EXPECT().Get(ctx, successID).Return(successExec, nil)
+	successExec.EXPECT().GetStatus(ctx).Return(status, nil)
+
+	output := captureStdout(t, func() {
+		err := cmd.Run(ctx, repo)
+		require.NoError(t, err)
+	})
+
+	var result ExecutionListOutput
+	require.NoError(t, json.Unmarshal(output, &result))
+	assert.Len(t, result.Items, 1)
+	assert.Equal(t, 1, result.Count)
+	assert.Equal(t, successID, result.Items[0].Id)
+}
+
+func TestStateExecutionListCmd_Run_WhenGetStatusFails_ThenSkipsAndContinues(t *testing.T) {
+	ctx := context.Background()
+	repo := briefkit.NewMockExecutionRepository(t)
+	failExec := briefkit.NewMockExecution(t)
+	successExec := briefkit.NewMockExecution(t)
+	cmd := &StateExecutionListCmd{}
+
+	failID := briefkit.ExecutionID("fail-id")
+	successID := briefkit.ExecutionID("success-id")
+	status := briefkit.ExecutionStatus{State: briefkit.ExecutionCreated}
+
+	repo.EXPECT().Find(ctx).Return([]briefkit.ExecutionID{failID, successID}, nil)
+	repo.EXPECT().Get(ctx, failID).Return(failExec, nil)
+	repo.EXPECT().Get(ctx, successID).Return(successExec, nil)
+	failExec.EXPECT().GetStatus(ctx).Return(briefkit.ExecutionStatus{}, errors.New("corrupt status"))
+	successExec.EXPECT().GetStatus(ctx).Return(status, nil)
+
+	output := captureStdout(t, func() {
+		err := cmd.Run(ctx, repo)
+		require.NoError(t, err)
+	})
+
+	var result ExecutionListOutput
+	require.NoError(t, json.Unmarshal(output, &result))
+	assert.Len(t, result.Items, 1)
+	assert.Equal(t, 1, result.Count)
+	assert.Equal(t, successID, result.Items[0].Id)
+}
 
 func TestStateExecutionListCmd_Run_EmptyRepository_ReturnsEmptyList(t *testing.T) {
 	fs := afero.NewMemMapFs()
