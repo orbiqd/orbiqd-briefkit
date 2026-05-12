@@ -192,7 +192,7 @@ func (instance *Instance) Wait(ctx context.Context) (briefkit.RuntimeResult, err
 
 func (instance *Instance) watchCodexEvents(stdoutLog io.Writer) error {
 	scanner := bufio.NewScanner(io.TeeReader(instance.stdout, stdoutLog))
-	scanner.Buffer(make([]byte, 1024*1024), 1024*1024)
+	scanner.Buffer(make([]byte, 10*1024*1024), 10*1024*1024)
 
 	for scanner.Scan() {
 		line := scanner.Text()

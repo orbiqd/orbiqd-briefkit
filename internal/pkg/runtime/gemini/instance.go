@@ -188,7 +188,7 @@ func (instance *Instance) watchGeminiEvents(stdoutLog io.Writer) error {
 	// We use a scanner to read line by line because Gemini CLI might output non-JSON text
 	// (e.g. "Loaded cached credentials.") mixed with JSON lines.
 	scanner := bufio.NewScanner(io.TeeReader(instance.stdout, stdoutLog))
-	scanner.Buffer(make([]byte, 1024*1024), 1024*1024)
+	scanner.Buffer(make([]byte, 10*1024*1024), 10*1024*1024)
 
 	for scanner.Scan() {
 		line := scanner.Text()
