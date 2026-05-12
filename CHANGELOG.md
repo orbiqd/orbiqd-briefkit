@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.1](https://github.com/orbiqd/orbiqd-briefkit/compare/v0.9.0...v0.9.1) (2026-05-12)
+
+
+### Bug Fixes
+
+* **runtime:** increase scanner buffer to 10 MB to handle large agent responses ([#64](https://github.com/orbiqd/orbiqd-briefkit/issues/64)) ([b074bf0](https://github.com/orbiqd/orbiqd-briefkit/commit/b074bf0368e1534d95abbb2228bd42ac3df77415))
+
 ## [0.9.0](https://github.com/orbiqd/orbiqd-briefkit/compare/v0.8.0...v0.9.0) (2026-04-06)
 
 
